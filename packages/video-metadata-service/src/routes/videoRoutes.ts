@@ -8,6 +8,8 @@ import {
   setVisibility,
   updateUploadStatus,
   getStats,
+  getPublicVideos,
+  getPublicVideoById,
 } from '../controllers';
 import { authenticate, authorize, UserRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
@@ -22,6 +24,10 @@ import {
 } from '../schemas';
 
 const router = Router();
+
+// Public, unauthenticated routes
+router.get('/public', getPublicVideos);
+router.get('/:videoId/public', validate(getVideoSchema), getPublicVideoById);
 
 // Admin-only access for all endpoints in this service
 router.use(authenticate, authorize(UserRole.ADMIN));

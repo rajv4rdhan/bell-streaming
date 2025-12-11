@@ -3,16 +3,9 @@ import { z } from 'zod';
 export const generatePresignedUrlSchema = z.object({
   body: z.object({
     videoId: z.string({ required_error: 'videoId is required' }).min(1),
-    filename: z.string().min(1).max(255).optional(),
     contentType: z
       .string({ required_error: 'contentType is required' })
       .regex(/^video\/(mp4|mpeg|quicktime|x-msvideo|webm|x-matroska)$/, 'Invalid video content type'),
-    fileSize: z
-      .number()
-      .int()
-      .positive()
-      .max(500 * 1024 * 1024, 'File size exceeds maximum allowed')
-      .optional(),
   }),
 });
 

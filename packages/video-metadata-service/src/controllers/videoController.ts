@@ -11,12 +11,19 @@ export const createVideo = async (req: AuthRequest, res: Response, next: NextFun
 
     if (!title) throw new AppError('Title is required', 400);
 
+    const ownerUserId = req.user?.userId || 'admin';
+    const timestamp = Date.now();
+    const s3Key = `videos/${ownerUserId}/${timestamp}_${title.replace(/\s+/g, '_')}.mp4`;
+    const s3Bucket = 'bell-streaming-videos'; // Or from config
+
     const video = await Video.create({
       title,
       description,
-      ownerUserId: req.user?.userId || 'admin',
+      ownerUserId,
       visibility: VisibilityStatus.PRIVATE,
       uploadStatus: UploadStatus.PENDING,
+      s3Key,
+      s3Bucket,
       tags: tags || [],
       categories: categories || [],
       durationSeconds,
@@ -133,6 +140,34 @@ export const updateUploadStatus = async (req: Request, res: Response, next: Next
     if (!video) throw new AppError('Video not found', 404);
 
     res.status(200).json({ message: 'Upload status updated', video });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPublicVideos = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const videos = await Video.find({
+      visibility: 'private',
+    }).select('title description duration createdAt');
+    res.status(200).json(videos);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPublicVideoById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { videoId } = req.params;
+    const video = await Video.findOne({
+      _id: videoId,
+    });
+
+    if (!video) {
+      throw new AppError('Public video not found', 404);
+    }
+
+    res.status(200).json(video);
   } catch (error) {
     next(error);
   }

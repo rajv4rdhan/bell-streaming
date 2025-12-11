@@ -18,12 +18,15 @@ export interface IVideo extends Document {
   ownerUserId: string;
   visibility: VisibilityStatus;
   uploadStatus: UploadStatus;
+  s3Key?: string; // S3 object key (e.g., videos/userId/videoId/timestamp_filename.mp4)
+  s3Bucket?: string; // S3 bucket name
   tags: string[];
   durationSeconds?: number;
   categories: string[];
   language?: string;
   releaseDate?: Date;
   promptForThumbnail?: string; // extra field for thumbnail prompt
+  thumbnailUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,12 +42,15 @@ const videoSchema = new Schema<IVideo>(
       default: VisibilityStatus.PRIVATE,
       index: true,
     },
+    s3Key: { type: String },
+    s3Bucket: { type: String },
     tags: { type: [String], default: [] },
     durationSeconds: { type: Number },
     categories: { type: [String], default: [] },
     language: { type: String },
     releaseDate: { type: Date },
     promptForThumbnail: { type: String },
+    thumbnailUrl: { type: String },
     uploadStatus: {
       type: String,
       enum: Object.values(UploadStatus),

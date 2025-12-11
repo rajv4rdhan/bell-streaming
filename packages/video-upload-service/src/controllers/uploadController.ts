@@ -3,7 +3,6 @@ import { s3Service, videoMetadataService } from '../services';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { GeneratePresignedUrlInput, ConfirmUploadInput, UploadFailedInput } from '../schemas';
-import { sanitizeFilename, generateSecureFilename } from '../middleware/fileValidation';
 
 export const generatePresignedUrl = async (
   req: AuthRequest,
@@ -11,7 +10,7 @@ export const generatePresignedUrl = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { videoId, filename, contentType, fileSize } = req.body as GeneratePresignedUrlInput;
+    const { videoId, contentType } = req.body as GeneratePresignedUrlInput;
     const userId = req.user?.userId;
 
     if (!userId) {
@@ -24,32 +23,20 @@ export const generatePresignedUrl = async (
       throw new AppError('Invalid token', 401);
     }
 
-    // Verify video exists and user has permission
-    try {
-      await videoMetadataService.getVideoMetadata(videoId, adminToken);
-    } catch (error) {
-      throw new AppError('Video not found or unauthorized', 404);
+    // Get video metadata to retrieve the pre-generated s3Key
+    const video = await videoMetadataService.getVideoMetadata(videoId, adminToken);
+    if (!video || !video.s3Key) {
+      throw new AppError('Video not found or s3Key missing', 404);
     }
 
-    // Generate secure filename (use default if not provided)
-    const baseFilename = filename || `video-${Date.now()}.mp4`;
-    const secureFilename = generateSecureFilename(sanitizeFilename(baseFilename), userId);
-    
-    // Generate S3 key
-    const s3Key = s3Service.generateS3Key(userId, videoId, secureFilename);
-
-    // Build metadata (only include fileSize if provided)
+    // Build metadata
     const metadata: Record<string, string> = {
       userId,
       videoId,
-      originalFilename: filename || 'auto-generated',
     };
-    if (fileSize !== undefined) {
-      metadata.fileSize = fileSize.toString();
-    }
 
-    // Generate presigned URL with metadata
-    const presignedUrl = await s3Service.generatePresignedUploadUrl(s3Key, contentType, metadata);
+    // Generate presigned URL with the key from the metadata service
+    const presignedUrl = await s3Service.generatePresignedUploadUrl(video.s3Key, contentType, metadata);
 
     // Update video status to "uploading"
     await videoMetadataService.updateUploadStatus(videoId, 'uploading', adminToken);
@@ -57,7 +44,7 @@ export const generatePresignedUrl = async (
     res.status(200).json({
       message: 'Presigned URL generated',
       presignedUrl,
-      s3Key,
+      s3Key: video.s3Key,
       expiresIn: 900, // 15 minutes
       uploadInstructions: {
         method: 'PUT',
