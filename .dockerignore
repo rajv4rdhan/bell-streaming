@@ -1,0 +1,15 @@
+# Common ignores
+node_modules
+npm-debug.log
+.DS_Store
+.env
+
+# Build outputs
+dist
+build
+target
+
+# IDE files
+.idea
+*.iml
+.vscode

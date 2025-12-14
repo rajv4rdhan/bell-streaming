@@ -4,6 +4,8 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": ".",
+    "emitDeclarationOnly": false,
+    "declaration": true,
     "paths": {
       "*": ["node_modules/*"]
     }

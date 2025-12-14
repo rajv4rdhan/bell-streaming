@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming-service
+  namespace: bell-streaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streaming-service
+  template:
+    metadata:
+      labels:
+        app: streaming-service
+    spec:
+      containers:
+      - name: streaming-service
+        image: your-docker-registry/streaming-service:latest # Replace with your image
+        ports:
+        - containerPort: 3003
+        envFrom:
+        - configMapRef:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming-service
+  namespace: bell-streaming
+spec:
+  selector:
+    app: streaming-service
+  ports:
+  - protocol: TCP
+    port: 3003
+    targetPort: 3003
+  type: LoadBalancer # Expose this service externally

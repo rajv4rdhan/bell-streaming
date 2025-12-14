@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: thumbnail-generator
+  namespace: bell-streaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: thumbnail-generator
+  template:
+    metadata:
+      labels:
+        app: thumbnail-generator
+    spec:
+      containers:
+      - name: thumbnail-generator
+        image: your-docker-registry/thumbnail-generator:latest # Replace with your image
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: thumbnail-generator
+  namespace: bell-streaming
+spec:
+  selector:
+    app: thumbnail-generator
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080

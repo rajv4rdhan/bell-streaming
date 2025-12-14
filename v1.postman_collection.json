@@ -1,0 +1,663 @@
+{
+	"info": {
+		"_postman_id": "2855e957-827f-4ac3-ae10-a2a732ba58c1",
+		"name": "v1",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "35975719"
+	},
+	"item": [
+		{
+			"name": "AUTH",
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"admin@example.com\",\r\n  \"password\": \"SecurePass123!\",\r\n  \"firstName\": \"Admin\",\r\n  \"lastName\": \"User\",\r\n  \"role\": \"admin\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/register"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"email\": \"admin@example.com\",\r\n  \"password\": \"SecurePass123!\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/login"
+					},
+					"response": []
+				},
+				{
+					"name": "Get profile [Protected]",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Get users [ADMIN]",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/users"
+					},
+					"response": []
+				},
+				{
+					"name": "Change user role [ADMIN]",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{$auth-url}}/users/:userId/role",
+							"host": [
+								"{{$auth-url}}"
+							],
+							"path": [
+								"users",
+								":userId",
+								"role"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user [ADMIN]",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{$auth-url}}/users/:userId",
+							"host": [
+								"{{$auth-url}}"
+							],
+							"path": [
+								"users",
+								":userId"
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update profile [Protected]",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout [Protected]",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/logout"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh access token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"refreshToken\":\"\" }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$auth-url}}/refresh"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Video Metadata (Admin-Only)",
+			"item": [
+				{
+					"name": "Create video metadata",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"My First Video\",\r\n  \"description\": \"Introduction to microservices\",\r\n  \"tags\": [\"tech\", \"tutorial\"],\r\n  \"promptForThumbnail\": \"A modern microservices architecture diagram\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{$video-meta-url}}/videos"
+					},
+					"response": []
+				},
+				{
+					"name": "List all videos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": "{{$video-meta-url}}/videos"
+					},
+					"response": []
+				},
+				{
+					"name": "Public video",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": "{{$video-meta-url}}/videos/public"
+					},
+					"response": []
+				},
+				{
+					"name": "single video",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": "693ad99e323eff8fac058a1f"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update video metadata",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete video & stats",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set video visibility",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId/visibility",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId",
+								"visibility"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update upload status",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId/upload-status",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId",
+								"upload-status"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get video statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{$video-meta-url}}/videos/:videoId/stats",
+							"host": [
+								"{{$video-meta-url}}"
+							],
+							"path": [
+								"videos",
+								":videoId",
+								"stats"
+							],
+							"variable": [
+								{
+									"key": "videoId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Streaming Service",
+			"item": [
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{$Streaming-service-url}}/stream/"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Video Upload Service",
+			"item": [
+				{
+					"name": "Get Presigned URL",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"videoId\": \"693b0c7a28f0f1ad5e25a5f4\",\n  \"contentType\": \"video/mp4\"\n}"
+						},
+						"url": "{{$video-upload}}/presigned-url"
+					},
+					"response": []
+				},
+				{
+					"name": "Report Failed Upload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"videoId\": \"{{videoId}}\",\n  \"s3Key\": \"videos/{{videoId}}/partial-upload.tmp\",\n  \"error\": \"Client upload aborted\"\n}"
+						},
+						"url": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Auto-verify Upload (manual)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": ""
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Upload",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"videoId\": \"{{videoId}}\",\n  \"s3Key\": \"videos/{{videoId}}/1630000000000.mp4\"\n}"
+						},
+						"url": ""
+					},
+					"response": []
+				},
+				{
+					"name": "upload to s3",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": "/D:/cdownlode/file_example_MP4_640_3MG.mp4"
+							}
+						},
+						"url": {
+							"raw": "https://s3.ap-south-1.amazonaws.com/v1.5-colour/videos/693ad70f3664d08d99aebdc0/1765477498217_My_First_Video.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Expires=900&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-meta-userid=693ad70f3664d08d99aebdc0&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject&X-Amz-Credential=AKIA5FMHAXP6SC3JVQUI%2F20251211%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20251211T182519Z&X-Amz-Signature=c33a115fb145d5a13da8ca8e6b483488dbd31b86e3f6b73d4027548a5b5d8cf8&X-Amz-SignedHeaders=host&x-amz-meta-videoid=693b0c7a28f0f1ad5e25a5f4",
+							"protocol": "https",
+							"host": [
+								"s3",
+								"ap-south-1",
+								"amazonaws",
+								"com"
+							],
+							"path": [
+								"v1.5-colour",
+								"videos",
+								"693ad70f3664d08d99aebdc0",
+								"1765477498217_My_First_Video.mp4"
+							],
+							"query": [
+								{
+									"key": "X-Amz-Algorithm",
+									"value": "AWS4-HMAC-SHA256"
+								},
+								{
+									"key": "X-Amz-Content-Sha256",
+									"value": "UNSIGNED-PAYLOAD"
+								},
+								{
+									"key": "X-Amz-Expires",
+									"value": "900"
+								},
+								{
+									"key": "x-amz-checksum-crc32",
+									"value": "AAAAAA%3D%3D"
+								},
+								{
+									"key": "x-amz-meta-userid",
+									"value": "693ad70f3664d08d99aebdc0"
+								},
+								{
+									"key": "x-amz-sdk-checksum-algorithm",
+									"value": "CRC32"
+								},
+								{
+									"key": "x-id",
+									"value": "PutObject"
+								},
+								{
+									"key": "X-Amz-Credential",
+									"value": "AKIA5FMHAXP6SC3JVQUI%2F20251211%2Fap-south-1%2Fs3%2Faws4_request"
+								},
+								{
+									"key": "X-Amz-Date",
+									"value": "20251211T182519Z"
+								},
+								{
+									"key": "X-Amz-Signature",
+									"value": "c33a115fb145d5a13da8ca8e6b483488dbd31b86e3f6b73d4027548a5b5d8cf8"
+								},
+								{
+									"key": "X-Amz-SignedHeaders",
+									"value": "host"
+								},
+								{
+									"key": "x-amz-meta-videoid",
+									"value": "693b0c7a28f0f1ad5e25a5f4"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "$url",
+			"value": ""
+		},
+		{
+			"key": "$auth-url",
+			"value": "http://localhost:3001/api/auth"
+		},
+		{
+			"key": "$video-meta-url",
+			"value": "http://localhost:3002/api"
+		},
+		{
+			"key": "$video-upload",
+			"value": ""
+		}
+	]
+}

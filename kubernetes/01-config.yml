@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: bell-streaming
+data:
+  # Node.js Services
+  VIDEO_METADATA_SERVICE_URL: "http://video-metadata-service:3002"
+  
+  # Java Service
+  FREEPIK_API_URL: "https://api.freepik.com/v1/ai/text-to-image/flux-pro-v1-1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: bell-streaming
+type: Opaque
+stringData:
+  # Replace with your actual secrets, preferably managed by a secret manager like AWS Secrets Manager or HashiCorp Vault
+  MONGODB_URI: "mongodb://your-mongo-db-uri"
+  JWT_SECRET: "your-super-secret-jwt-key"
+  AWS_REGION: "us-east-1"
+  AWS_ACCESS_KEY_ID: "YOUR_AWS_ACCESS_KEY"
+  AWS_SECRET_ACCESS_KEY: "YOUR_AWS_SECRET_KEY"
+  S3_BUCKET_NAME: "your-s3-bucket-name"
+  FREEPIK_API_KEY: "YOUR_FREEPIK_API_KEY"
+  WEBHOOK_URL: "your-webhook-url"

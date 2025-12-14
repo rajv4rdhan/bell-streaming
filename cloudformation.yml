@@ -1,0 +1,259 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation for Bell Streaming Microservices on AWS ECS with Fargate'
+
+Parameters:
+  ImageRepoUrl:
+    Type: String
+    Description: 'URL of the ECR repository where the images are stored.'
+  MongoDbUri:
+    Type: String
+    Description: 'MongoDB connection URI.'
+    NoEcho: true
+  JwtSecret:
+    Type: String
+    Description: 'JWT secret key.'
+    NoEcho: true
+  AwsRegion:
+    Type: String
+    Description: 'AWS Region for S3 and other services.'
+    Default: 'us-east-1'
+  S3BucketName:
+    Type: String
+    Description: 'S3 bucket name for video uploads.'
+  FreepikApiKey:
+    Type: String
+    Description: 'API Key for Freepik service.'
+    NoEcho: true
+  WebhookUrl:
+    Type: String
+    Description: 'Webhook URL for thumbnail generation.'
+
+Resources:
+  # --- Networking ---
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: BellStreaming-VPC
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Public-1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Public-2
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: BellStreaming-IGW
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Public-RT
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  SubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # --- Security ---
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: 'Allow public access to services'
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Public-SG
+
+  # --- ECS Cluster ---
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: BellStreamingCluster
+
+  # --- IAM Roles ---
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs-tasks.amazonaws.com]
+          Action: [sts:AssumeRole]
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess # For video upload service
+
+  # --- Task Definitions ---
+  # (Define one Task Definition per service)
+  AuthServiceTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: auth-service
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !Ref ECSTaskExecutionRole
+      ContainerDefinitions:
+        - Name: auth-service
+          Image: !Sub '${ImageRepoUrl}/auth-service:latest'
+          PortMappings:
+            - ContainerPort: 3001
+          Environment:
+            - Name: PORT
+              Value: '3001'
+          Secrets:
+            - Name: MONGODB_URI
+              ValueFrom: !Ref MongoDbUri
+            - Name: JWT_SECRET
+              ValueFrom: !Ref JwtSecret
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AuthServiceLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  # ... (Repeat Task Definition for video-metadata-service, video-upload-service, streaming-service, thumbnail-generator)
+
+  # --- Services ---
+  # (Define one Service per Task Definition)
+  AuthService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: auth-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref AuthServiceTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: [!Ref PublicSubnet1, !Ref PublicSubnet2]
+          SecurityGroups: [!Ref PublicSecurityGroup]
+          AssignPublicIp: ENABLED
+      LoadBalancers:
+        - TargetGroupArn: !Ref AuthServiceTargetGroup
+          ContainerName: auth-service
+          ContainerPort: 3001
+
+  # ... (Repeat Service for other services)
+
+  # --- Load Balancer ---
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: BellStreaming-ALB
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref PublicSecurityGroup
+      Scheme: internet-facing
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: fixed-response
+          FixedResponseConfig:
+            ContentType: text/plain
+            MessageBody: "Service not found."
+            StatusCode: '404'
+
+  # --- Target Groups & Listener Rules ---
+  # (Define one Target Group and Listener Rule per service)
+  AuthServiceTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !Ref VPC
+      Port: 3001
+      Protocol: HTTP
+      Matcher:
+        HttpCode: 200-299
+      HealthCheckPath: /
+      TargetType: ip
+
+  AuthServiceListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      ListenerArn: !Ref LoadBalancerListener
+      Priority: 1
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref AuthServiceTargetGroup
+      Conditions:
+        - Field: path-pattern
+          Values: ['/auth*'] # Example path-based routing
+
+  # ... (Repeat Target Group and Listener Rule for other services)
+
+  # --- Log Groups ---
+  AuthServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/auth-service
+
+  # ... (Repeat Log Group for other services)
+
+Outputs:
+  LoadBalancerDNS:
+    Description: The DNS name of the Application Load Balancer
+    Value: !GetAtt LoadBalancer.DNSName

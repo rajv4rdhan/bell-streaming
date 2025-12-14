@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: bell-streaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: your-docker-registry/auth-service:latest # Replace with your image
+        ports:
+        - containerPort: 3001
+        envFrom:
+        - secretRef:
+            name: app-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: bell-streaming
+spec:
+  selector:
+    app: auth-service
+  ports:
+  - protocol: TCP
+    port: 3001
+    targetPort: 3001

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-metadata-service
+  namespace: bell-streaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-metadata-service
+  template:
+    metadata:
+      labels:
+        app: video-metadata-service
+    spec:
+      containers:
+      - name: video-metadata-service
+        image: your-docker-registry/video-metadata-service:latest # Replace with your image
+        ports:
+        - containerPort: 3002
+        envFrom:
+        - secretRef:
+            name: app-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-metadata-service
+  namespace: bell-streaming
+spec:
+  selector:
+    app: video-metadata-service
+  ports:
+  - protocol: TCP
+    port: 3002
+    targetPort: 3002

@@ -1,7 +1,6 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import routes from './routes';
 import { errorHandler } from './middleware';
@@ -9,31 +8,23 @@ import { errorHandler } from './middleware';
 export const createApp = (): Application => {
   const app = express();
 
+  // Trust proxy (nginx)
+  app.set('trust proxy', true);
+
   // Security middleware
   app.use(helmet());
 
   // CORS configuration
   app.use(
     cors({
-      origin: config.cors.allowedOrigins,
-      credentials: true,
+      origin: process.env.CORS_ORIGIN,
+      credentials: false,
     })
   );
 
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-
-  // Rate limiting
-  const limiter = rateLimit({
-    windowMs: config.rateLimit.windowMs,
-    max: config.rateLimit.maxRequests,
-    message: 'Too many requests from this IP, please try again later.',
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
-  app.use('/api', limiter);
 
   // Routes
   app.use('/api', routes);

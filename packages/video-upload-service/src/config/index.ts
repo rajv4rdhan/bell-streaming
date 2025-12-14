@@ -13,10 +13,10 @@ export const config = {
     presignedUrlExpiration: parseInt(process.env.S3_PRESIGNED_URL_EXPIRATION || '900'),
   },
   videoMetadataService: {
-    url: process.env.VIDEO_METADATA_SERVICE_URL || 'http://localhost:3002/api/videos',
+    url: process.env.VIDEO_METADATA_SERVICE_URL || 'http://localhost:3002/api/admin/videos',
   },
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key',
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',
   },
   upload: {
     maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB || '500'),
@@ -32,7 +32,7 @@ export const config = {
     allowedExtensions: ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.mpeg', '.mpg'],
   },
   cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),

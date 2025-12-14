@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-upload-service
+  namespace: bell-streaming
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-upload-service
+  template:
+    metadata:
+      labels:
+        app: video-upload-service
+    spec:
+      containers:
+      - name: video-upload-service
+        image: your-docker-registry/video-upload-service:latest # Replace with your image
+        ports:
+        - containerPort: 3004
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-upload-service
+  namespace: bell-streaming
+spec:
+  selector:
+    app: video-upload-service
+  ports:
+  - protocol: TCP
+    port: 3004
+    targetPort: 3004

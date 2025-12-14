@@ -10,7 +10,10 @@ import { rateLimiter } from './middleware/rateLimiter';
 const app: Express = express();
 const port = process.env.PORT || 3003;
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: false,
+}));
 app.use(helmet());
 app.use(express.json());
 app.use(rateLimiter);

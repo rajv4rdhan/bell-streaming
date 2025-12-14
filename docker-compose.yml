@@ -1,0 +1,73 @@
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - auth-service
+      - video-metadata-service
+      - video-upload-service
+      - streaming-service
+      - thumbnail-generator
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: packages/auth-service/Dockerfile
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
+    environment:
+      - PORT=3001
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+
+  video-metadata-service:
+    build:
+      context: .
+      dockerfile: packages/video-metadata-service/Dockerfile
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
+    environment:
+      - PORT=3002
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+
+  video-upload-service:
+    build:
+      context: .
+      dockerfile: packages/video-upload-service/Dockerfile
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
+    environment:
+      - PORT=3004
+      - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+
+  streaming-service:
+    build:
+      context: .
+      dockerfile: packages/streaming-service/Dockerfile
+    environment:
+      - PORT=3003
+      - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
+
+  thumbnail-generator:
+    build:
+      context: .
+      dockerfile: packages/thumbnail-generator/Dockerfile
+    environment:
+      - FREEPIK_API_KEY=${FREEPIK_API_KEY}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+
+networks:
+  default:
+    name: bell-streaming-network
