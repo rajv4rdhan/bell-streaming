@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'bell-streaming'
+    replica: 'prometheus-1'
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Docker container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: project
+
+  # Add your microservices here when they expose /metrics endpoint
+  # - job_name: 'auth-service'
+  #   static_configs:
+  #     - targets: ['auth-service:3001']
+  #   metrics_path: '/metrics'
+  
+  # - job_name: 'video-upload-service'
+  #   static_configs:
+  #     - targets: ['video-upload-service:3004']
+  #   metrics_path: '/metrics'
+  
+  # - job_name: 'video-metadata-service'
+  #   static_configs:
+  #     - targets: ['video-metadata-service:3002']
+  #   metrics_path: '/metrics'
+  
+  # - job_name: 'streaming-service'
+  #   static_configs:
+  #     - targets: ['streaming-service:3003']
+  #   metrics_path: '/metrics'

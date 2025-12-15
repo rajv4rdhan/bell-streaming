@@ -1,32 +1,64 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CloudFormation for Bell Streaming Microservices on AWS ECS with Fargate'
+Description: 'CloudFormation for Bell Streaming Microservices on EC2 with Docker Compose'
 
 Parameters:
-  ImageRepoUrl:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: 'EC2 Key Pair for SSH access'
+  InstanceType:
     Type: String
-    Description: 'URL of the ECR repository where the images are stored.'
+    Description: 'EC2 instance type'
+    Default: 't3.2xlarge'
+    AllowedValues:
+      - t3.xlarge
+      - t3.2xlarge
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - c5.2xlarge
+      - c5.4xlarge
   MongoDbUri:
     Type: String
-    Description: 'MongoDB connection URI.'
+    Description: 'MongoDB connection URI (e.g., MongoDB Atlas)'
     NoEcho: true
   JwtSecret:
     Type: String
-    Description: 'JWT secret key.'
+    Description: 'JWT secret key'
     NoEcho: true
-  AwsRegion:
+  JwtRefreshSecret:
     Type: String
-    Description: 'AWS Region for S3 and other services.'
-    Default: 'us-east-1'
+    Description: 'JWT refresh secret key'
+    NoEcho: true
+  AwsAccessKeyId:
+    Type: String
+    Description: 'AWS Access Key ID for S3 access'
+    NoEcho: true
+  AwsSecretAccessKey:
+    Type: String
+    Description: 'AWS Secret Access Key for S3 access'
+    NoEcho: true
   S3BucketName:
     Type: String
-    Description: 'S3 bucket name for video uploads.'
+    Description: 'S3 bucket name for video uploads'
   FreepikApiKey:
     Type: String
-    Description: 'API Key for Freepik service.'
+    Description: 'API Key for Freepik service'
     NoEcho: true
+    Default: ''
   WebhookUrl:
     Type: String
-    Description: 'Webhook URL for thumbnail generation.'
+    Description: 'Webhook URL for thumbnail generation'
+    Default: ''
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c02fb55c47b2db41  # Amazon Linux 2023
+    us-west-2:
+      AMI: ami-008fe2fc65df48dac
+    eu-west-1:
+      AMI: ami-0905a3c97561e0b69
+
 
 Resources:
   # --- Networking ---
@@ -40,7 +72,7 @@ Resources:
         - Key: Name
           Value: BellStreaming-VPC
 
-  PublicSubnet1:
+  PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -49,18 +81,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: BellStreaming-Public-1
-
-  PublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      AvailabilityZone: !Select [ 1, !GetAZs '' ]
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: BellStreaming-Public-2
+          Value: BellStreaming-Public-Subnet
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -85,175 +106,601 @@ Resources:
 
   PublicRoute:
     Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
 
-  SubnetRouteTableAssociation1:
+  SubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet1
+      SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
 
-  SubnetRouteTableAssociation2:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet2
-      RouteTableId: !Ref PublicRouteTable
-
-  # --- Security ---
-  PublicSecurityGroup:
+  # --- Security Group ---
+  EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPC
-      GroupDescription: 'Allow public access to services'
+      GroupDescription: 'Security group for Bell Streaming EC2 instance'
       SecurityGroupIngress:
+        # SSH
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
+          FromPort: 22
+          ToPort: 22
           CidrIp: 0.0.0.0/0
+          Description: 'SSH access'
+        # Nginx
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: 0.0.0.0/0
+          Description: 'Nginx'
+        # Auth Service
+        - IpProtocol: tcp
+          FromPort: 3001
+          ToPort: 3001
+          CidrIp: 0.0.0.0/0
+          Description: 'Auth Service'
+        # Video Metadata Service
+        - IpProtocol: tcp
+          FromPort: 3002
+          ToPort: 3002
+          CidrIp: 0.0.0.0/0
+          Description: 'Video Metadata Service'
+        # Streaming Service
+        - IpProtocol: tcp
+          FromPort: 3003
+          ToPort: 3003
+          CidrIp: 0.0.0.0/0
+          Description: 'Streaming Service'
+        # Video Upload Service
+        - IpProtocol: tcp
+          FromPort: 3004
+          ToPort: 3004
+          CidrIp: 0.0.0.0/0
+          Description: 'Video Upload Service'
+        # Grafana
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+          Description: 'Grafana'
+        # Loki
+        - IpProtocol: tcp
+          FromPort: 3100
+          ToPort: 3100
+          CidrIp: 0.0.0.0/0
+          Description: 'Loki'
+        # cAdvisor
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+          Description: 'cAdvisor'
+        # Prometheus
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          CidrIp: 0.0.0.0/0
+          Description: 'Prometheus'
       Tags:
         - Key: Name
-          Value: BellStreaming-Public-SG
+          Value: BellStreaming-EC2-SG
 
-  # --- ECS Cluster ---
-  ECSCluster:
-    Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: BellStreamingCluster
-
-  # --- IAM Roles ---
-  ECSTaskExecutionRole:
+  # --- IAM Role for EC2 ---
+  EC2InstanceRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
+        Version: '2012-10-17'
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: [ecs-tasks.amazonaws.com]
-          Action: [sts:AssumeRole]
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess # For video upload service
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: BellStreaming-EC2-Role
 
-  # --- Task Definitions ---
-  # (Define one Task Definition per service)
-  AuthServiceTaskDefinition:
-    Type: AWS::ECS::TaskDefinition
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
     Properties:
-      Family: auth-service
-      Cpu: 256
-      Memory: 512
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      ExecutionRoleArn: !Ref ECSTaskExecutionRole
-      ContainerDefinitions:
-        - Name: auth-service
-          Image: !Sub '${ImageRepoUrl}/auth-service:latest'
-          PortMappings:
-            - ContainerPort: 3001
-          Environment:
-            - Name: PORT
-              Value: '3001'
-          Secrets:
-            - Name: MONGODB_URI
-              ValueFrom: !Ref MongoDbUri
-            - Name: JWT_SECRET
-              ValueFrom: !Ref JwtSecret
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref AuthServiceLogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: ecs
+      Roles:
+        - !Ref EC2InstanceRole
 
-  # ... (Repeat Task Definition for video-metadata-service, video-upload-service, streaming-service, thumbnail-generator)
-
-  # --- Services ---
-  # (Define one Service per Task Definition)
-  AuthService:
-    Type: AWS::ECS::Service
+  # --- EC2 Instance ---
+  BellStreamingEC2:
+    Type: AWS::EC2::Instance
     Properties:
-      ServiceName: auth-service
-      Cluster: !Ref ECSCluster
-      TaskDefinition: !Ref AuthServiceTaskDefinition
-      DesiredCount: 1
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          Subnets: [!Ref PublicSubnet1, !Ref PublicSubnet2]
-          SecurityGroups: [!Ref PublicSecurityGroup]
-          AssignPublicIp: ENABLED
-      LoadBalancers:
-        - TargetGroupArn: !Ref AuthServiceTargetGroup
-          ContainerName: auth-service
-          ContainerPort: 3001
-
-  # ... (Repeat Service for other services)
-
-  # --- Load Balancer ---
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: BellStreaming-ALB
-      Subnets:
-        - !Ref PublicSubnet1
-        - !Ref PublicSubnet2
-      SecurityGroups:
-        - !Ref PublicSecurityGroup
-      Scheme: internet-facing
-
-  LoadBalancerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-      DefaultActions:
-        - Type: fixed-response
-          FixedResponseConfig:
-            ContentType: text/plain
-            MessageBody: "Service not found."
-            StatusCode: '404'
-
-  # --- Target Groups & Listener Rules ---
-  # (Define one Target Group and Listener Rule per service)
-  AuthServiceTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      VpcId: !Ref VPC
-      Port: 3001
-      Protocol: HTTP
-      Matcher:
-        HttpCode: 200-299
-      HealthCheckPath: /
-      TargetType: ip
-
-  AuthServiceListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      ListenerArn: !Ref LoadBalancerListener
-      Priority: 1
-      Actions:
-        - Type: forward
-          TargetGroupArn: !Ref AuthServiceTargetGroup
-      Conditions:
-        - Field: path-pattern
-          Values: ['/auth*'] # Example path-based routing
-
-  # ... (Repeat Target Group and Listener Rule for other services)
-
-  # --- Log Groups ---
-  AuthServiceLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/auth-service
-
-  # ... (Repeat Log Group for other services)
+      ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: '0'
+          GroupSet:
+            - !Ref EC2SecurityGroup
+          SubnetId: !Ref PublicSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp3
+            Iops: 3000
+            Throughput: 125
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          
+          # Update system
+          dnf update -y
+          
+          # Install Docker
+          dnf install -y docker
+          systemctl start docker
+          systemctl enable docker
+          usermod -aG docker ec2-user
+          
+          # Install Docker Compose
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+          
+          # Create project directory
+          mkdir -p /home/ec2-user/bellStreaming
+          cd /home/ec2-user/bellStreaming
+          
+          # Create .env file
+          cat > /home/ec2-user/bellStreaming/.env << 'ENVEOF'
+          MONGODB_URI=${MongoDbUri}
+          JWT_SECRET=${JwtSecret}
+          JWT_REFRESH_SECRET=${JwtRefreshSecret}
+          JWT_EXPIRES_IN=15m
+          JWT_REFRESH_EXPIRES_IN=7d
+          RATE_LIMIT_WINDOW_MS=900000
+          RATE_LIMIT_MAX_REQUESTS=100
+          AWS_REGION=${AWS::Region}
+          AWS_ACCESS_KEY_ID=${AwsAccessKeyId}
+          AWS_SECRET_ACCESS_KEY=${AwsSecretAccessKey}
+          S3_BUCKET_NAME=${S3BucketName}
+          FREEPIK_API_KEY=${FreepikApiKey}
+          WEBHOOK_URL=${WebhookUrl}
+          ENVEOF
+          
+          # Create monitoring directories
+          mkdir -p monitoring/prometheus
+          mkdir -p monitoring/loki
+          mkdir -p monitoring/promtail
+          mkdir -p monitoring/grafana/provisioning/dashboards
+          mkdir -p monitoring/grafana/provisioning/datasources
+          
+          # Create prometheus config
+          cat > monitoring/prometheus/prometheus.yml << 'PROMEOF'
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+          
+          scrape_configs:
+            - job_name: 'cadvisor'
+              static_configs:
+                - targets: ['cadvisor:8080']
+              metric_relabel_configs:
+                - source_labels: [__name__]
+                  regex: 'container_.*'
+                  action: keep
+                - source_labels: [image]
+                  target_label: service
+                - source_labels: [name]
+                  target_label: container_name
+                - source_labels: [com_docker_compose_project]
+                  target_label: project
+          PROMEOF
+          
+          # Create loki config
+          cat > monitoring/loki/loki-config.yml << 'LOKIEOF'
+          auth_enabled: false
+          
+          server:
+            http_listen_port: 3100
+          
+          ingester:
+            lifecycler:
+              address: 127.0.0.1
+              ring:
+                kvstore:
+                  store: inmemory
+                replication_factor: 1
+              final_sleep: 0s
+            chunk_idle_period: 5m
+            chunk_retain_period: 30s
+          
+          schema_config:
+            configs:
+              - from: 2023-01-01
+                store: boltdb-shipper
+                object_store: filesystem
+                schema: v11
+                index:
+                  prefix: index_
+                  period: 24h
+          
+          storage_config:
+            boltdb_shipper:
+              active_index_directory: /loki/index
+              cache_location: /loki/cache
+              shared_store: filesystem
+            filesystem:
+              directory: /loki/chunks
+          
+          limits_config:
+            enforce_metric_name: false
+            reject_old_samples: true
+            reject_old_samples_max_age: 168h
+          
+          chunk_store_config:
+            max_look_back_period: 0s
+          
+          table_manager:
+            retention_deletes_enabled: false
+            retention_period: 0s
+          LOKIEOF
+          
+          # Create promtail config
+          cat > monitoring/promtail/promtail-config.yml << 'PROMTAILEOF'
+          server:
+            http_listen_port: 9080
+            grpc_listen_port: 0
+          
+          positions:
+            filename: /tmp/positions.yaml
+          
+          clients:
+            - url: http://loki:3100/loki/api/v1/push
+          
+          scrape_configs:
+            - job_name: docker
+              docker_sd_configs:
+                - host: unix:///var/run/docker.sock
+                  refresh_interval: 5s
+              relabel_configs:
+                - source_labels: ['__meta_docker_container_label_logging']
+                  action: keep
+                  regex: 'promtail'
+                - source_labels: ['__meta_docker_container_name']
+                  target_label: 'container'
+                - source_labels: ['__meta_docker_container_log_stream']
+                  target_label: 'stream'
+          PROMTAILEOF
+          
+          # Create Grafana datasources
+          cat > monitoring/grafana/provisioning/datasources/datasources.yml << 'DSEOF'
+          apiVersion: 1
+          
+          datasources:
+            - name: Prometheus
+              type: prometheus
+              access: proxy
+              url: http://prometheus:9090
+              isDefault: true
+              editable: true
+          
+            - name: Loki
+              type: loki
+              access: proxy
+              url: http://loki:3100
+              editable: true
+          DSEOF
+          
+          # Create Grafana dashboard provisioning
+          cat > monitoring/grafana/provisioning/dashboards/dashboard.yml << 'DASHEOF'
+          apiVersion: 1
+          
+          providers:
+            - name: 'Bell Streaming'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              updateIntervalSeconds: 10
+              allowUiUpdates: true
+              options:
+                path: /etc/grafana/provisioning/dashboards
+          DASHEOF
+          
+          # Pull Docker images
+          docker pull rajv4rdhan/bell-streaming-nginx:latest
+          docker pull rajv4rdhan/bell-streaming-auth-service:latest
+          docker pull rajv4rdhan/bell-streaming-video-metadata-service:latest
+          docker pull rajv4rdhan/bell-streaming-video-upload-service:latest
+          docker pull rajv4rdhan/bell-streaming-streaming-service:latest
+          docker pull rajv4rdhan/bell-streaming-thumbnail-generator:latest
+          docker pull prom/prometheus:latest
+          docker pull grafana/loki:2.9.3
+          docker pull grafana/promtail:2.9.3
+          docker pull grafana/grafana:latest
+          docker pull gcr.io/cadvisor/cadvisor:v0.47.0
+          
+          # Download docker-compose.prod.yml
+          cat > docker-compose.prod.yml << 'COMPOSEEOF'
+          version: '3.8'
+          
+          services:
+            nginx:
+              image: rajv4rdhan/bell-streaming-nginx:latest
+              container_name: nginx
+              ports:
+                - "8081:80"
+              depends_on:
+                - auth-service
+                - video-metadata-service
+                - video-upload-service
+                - streaming-service
+                - thumbnail-generator
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            auth-service:
+              image: rajv4rdhan/bell-streaming-auth-service:latest
+              container_name: auth-service
+              environment:
+                - PORT=3001
+                - MONGODB_URI=$${MONGODB_URI}
+                - JWT_SECRET=$${JWT_SECRET}
+                - JWT_REFRESH_SECRET=$${JWT_REFRESH_SECRET}
+                - JWT_EXPIRES_IN=$${JWT_EXPIRES_IN:-15m}
+                - JWT_REFRESH_EXPIRES_IN=$${JWT_REFRESH_EXPIRES_IN:-7d}
+                - RATE_LIMIT_WINDOW_MS=$${RATE_LIMIT_WINDOW_MS:-900000}
+                - RATE_LIMIT_MAX_REQUESTS=$${RATE_LIMIT_MAX_REQUESTS:-100}
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            video-metadata-service:
+              image: rajv4rdhan/bell-streaming-video-metadata-service:latest
+              container_name: video-metadata-service
+              environment:
+                - PORT=3002
+                - MONGODB_URI=$${MONGODB_URI}
+                - JWT_SECRET=$${JWT_SECRET}
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            video-upload-service:
+              image: rajv4rdhan/bell-streaming-video-upload-service:latest
+              container_name: video-upload-service
+              environment:
+                - PORT=3004
+                - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
+                - AWS_REGION=$${AWS_REGION:-us-east-1}
+                - AWS_ACCESS_KEY_ID=$${AWS_ACCESS_KEY_ID}
+                - AWS_SECRET_ACCESS_KEY=$${AWS_SECRET_ACCESS_KEY}
+                - S3_BUCKET_NAME=$${S3_BUCKET_NAME}
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            streaming-service:
+              image: rajv4rdhan/bell-streaming-streaming-service:latest
+              container_name: streaming-service
+              environment:
+                - PORT=3003
+                - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            thumbnail-generator:
+              image: rajv4rdhan/bell-streaming-thumbnail-generator:latest
+              container_name: thumbnail-generator
+              environment:
+                - FREEPIK_API_KEY=$${FREEPIK_API_KEY}
+                - WEBHOOK_URL=$${WEBHOOK_URL}
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              labels:
+                logging: "promtail"
+              logging:
+                driver: "json-file"
+                options:
+                  max-size: "10m"
+                  max-file: "3"
+          
+            prometheus:
+              image: prom/prometheus:latest
+              container_name: prometheus
+              ports:
+                - "9090:9090"
+              volumes:
+                - ./monitoring/prometheus:/etc/prometheus
+                - prometheus-data:/prometheus
+              command:
+                - '--config.file=/etc/prometheus/prometheus.yml'
+                - '--storage.tsdb.path=/prometheus'
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+          
+            loki:
+              image: grafana/loki:2.9.3
+              container_name: loki
+              ports:
+                - "3100:3100"
+              volumes:
+                - ./monitoring/loki:/etc/loki
+                - loki-data:/loki
+              command: -config.file=/etc/loki/loki-config.yml
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+          
+            promtail:
+              image: grafana/promtail:2.9.3
+              container_name: promtail
+              volumes:
+                - ./monitoring/promtail:/etc/promtail
+                - /var/run/docker.sock:/var/run/docker.sock
+                - /var/lib/docker/containers:/var/lib/docker/containers:ro
+              command: -config.file=/etc/promtail/promtail-config.yml
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              depends_on:
+                - loki
+          
+            grafana:
+              image: grafana/grafana:latest
+              container_name: grafana
+              ports:
+                - "3000:3000"
+              environment:
+                - GF_SECURITY_ADMIN_USER=admin
+                - GF_SECURITY_ADMIN_PASSWORD=admin123
+                - GF_USERS_ALLOW_SIGN_UP=false
+                - GF_SERVER_ROOT_URL=http://localhost:3000
+              volumes:
+                - grafana-data:/var/lib/grafana
+                - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+              depends_on:
+                - prometheus
+                - loki
+          
+            cadvisor:
+              image: gcr.io/cadvisor/cadvisor:v0.47.0
+              container_name: cadvisor
+              ports:
+                - "8080:8080"
+              volumes:
+                - /:/rootfs:ro
+                - /var/run:/var/run:ro
+                - /sys:/sys:ro
+                - /var/lib/docker:/var/lib/docker:ro
+                - /dev/disk:/dev/disk:ro
+                - /var/run/docker.sock:/var/run/docker.sock:ro
+              privileged: true
+              command:
+                - '--docker_only=true'
+                - '--housekeeping_interval=10s'
+                - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
+              networks:
+                - bell-streaming-network
+              restart: unless-stopped
+          
+          volumes:
+            prometheus-data:
+            loki-data:
+            grafana-data:
+          
+          networks:
+            bell-streaming-network:
+              driver: bridge
+          COMPOSEEOF
+          
+          # Set ownership
+          chown -R ec2-user:ec2-user /home/ec2-user/bellStreaming
+          
+          # Start services
+          cd /home/ec2-user/bellStreaming
+          docker-compose -f docker-compose.prod.yml up -d
+          
+          # Create systemd service for auto-restart
+          cat > /etc/systemd/system/bell-streaming.service << 'SERVICEEOF'
+          [Unit]
+          Description=Bell Streaming Docker Compose Application
+          Requires=docker.service
+          After=docker.service
+          
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          WorkingDirectory=/home/ec2-user/bellStreaming
+          ExecStart=/usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
+          ExecStop=/usr/local/bin/docker-compose -f docker-compose.prod.yml down
+          User=ec2-user
+          
+          [Install]
+          WantedBy=multi-user.target
+          SERVICEEOF
+          
+          systemctl daemon-reload
+          systemctl enable bell-streaming.service
+          
+          echo "Bell Streaming deployment completed successfully!"
+          
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Server
 
 Outputs:
-  LoadBalancerDNS:
-    Description: The DNS name of the Application Load Balancer
-    Value: !GetAtt LoadBalancer.DNSName
+  InstancePublicIP:
+    Description: 'Public IP address of the EC2 instance'
+    Value: !GetAtt BellStreamingEC2.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceIP'
+  
+  NginxURL:
+    Description: 'Nginx frontend URL'
+    Value: !Sub 'http://${BellStreamingEC2.PublicIp}:8081'
+  
+  GrafanaURL:
+    Description: 'Grafana monitoring dashboard URL'
+    Value: !Sub 'http://${BellStreamingEC2.PublicIp}:3000'
+  
+  PrometheusURL:
+    Description: 'Prometheus metrics URL'
+    Value: !Sub 'http://${BellStreamingEC2.PublicIp}:9090'
+  
+  cAdvisorURL:
+    Description: 'cAdvisor container monitoring URL'
+    Value: !Sub 'http://${BellStreamingEC2.PublicIp}:8080'
+  
+  SSHCommand:
+    Description: 'SSH command to connect to the instance'
+    Value: !Sub 'ssh -i ${KeyName}.pem ec2-user@${BellStreamingEC2.PublicIp}'

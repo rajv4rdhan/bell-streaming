@@ -1,9 +1,9 @@
+version: '3.8'
 
 services:
   nginx:
-    build:
-      context: .
-      dockerfile: nginx/Dockerfile
+    image: rajv4rdhan/bell-streaming-nginx:latest
+    container_name: nginx
     ports:
       - "8081:80"
     depends_on:
@@ -12,73 +12,114 @@ services:
       - video-upload-service
       - streaming-service
       - thumbnail-generator
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
+    labels:
+      logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   auth-service:
-    build:
-      context: .
-      dockerfile: packages/auth-service/Dockerfile
-    dns:
-      - 172.19.2.254
-      - 8.8.4.4
+    image: rajv4rdhan/bell-streaming-auth-service:latest
+    container_name: auth-service
     environment:
       - PORT=3001
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
     labels:
       logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   video-metadata-service:
-    build:
-      context: .
-      dockerfile: packages/video-metadata-service/Dockerfile
-    dns:
-      - 172.19.2.254
-      - 8.8.4.4
+    image: rajv4rdhan/bell-streaming-video-metadata-service:latest
+    container_name: video-metadata-service
     environment:
       - PORT=3002
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
     labels:
       logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   video-upload-service:
-    build:
-      context: .
-      dockerfile: packages/video-upload-service/Dockerfile
-    dns:
-      - 172.19.2.254
-      - 8.8.4.4
+    image: rajv4rdhan/bell-streaming-video-upload-service:latest
+    container_name: video-upload-service
     environment:
       - PORT=3004
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
-      - AWS_REGION=${AWS_REGION}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
     labels:
       logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   streaming-service:
-    build:
-      context: .
-      dockerfile: packages/streaming-service/Dockerfile
+    image: rajv4rdhan/bell-streaming-streaming-service:latest
+    container_name: streaming-service
     environment:
       - PORT=3003
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
     labels:
       logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   thumbnail-generator:
-    build:
-      context: .
-      dockerfile: packages/thumbnail-generator/Dockerfile
+    image: rajv4rdhan/bell-streaming-thumbnail-generator:latest
+    container_name: thumbnail-generator
     environment:
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
+    networks:
+      - bell-streaming-network
+    restart: unless-stopped
     labels:
       logging: "promtail"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  # Monitoring Stack
+  # Monitoring Stack (Optional)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -90,12 +131,9 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+    networks:
+      - bell-streaming-network
     restart: unless-stopped
-    labels:
-      logging: "promtail"
 
   loki:
     image: grafana/loki:2.9.3
@@ -106,9 +144,9 @@ services:
       - ./monitoring/loki:/etc/loki
       - loki-data:/loki
     command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - bell-streaming-network
     restart: unless-stopped
-    labels:
-      logging: "promtail"
 
   promtail:
     image: grafana/promtail:2.9.3
@@ -118,6 +156,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     command: -config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - bell-streaming-network
     restart: unless-stopped
     depends_on:
       - loki
@@ -132,16 +172,15 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_SERVER_ROOT_URL=http://localhost:3000
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - bell-streaming-network
     restart: unless-stopped
     depends_on:
       - prometheus
       - loki
-    labels:
-      logging: "promtail"
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.0
@@ -162,9 +201,9 @@ services:
       - '--docker_only=true'
       - '--housekeeping_interval=10s'
       - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
+    networks:
+      - bell-streaming-network
     restart: unless-stopped
-    labels:
-      logging: "promtail"
 
 volumes:
   prometheus-data:
@@ -172,5 +211,5 @@ volumes:
   grafana-data:
 
 networks:
-  default:
-    name: bell-streaming-network
+  bell-streaming-network:
+    driver: bridge
