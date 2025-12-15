@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, Button, Input, videoMetadataApi, videoUploadApi } from '@bell-streaming/shared-ui';
@@ -73,6 +73,8 @@ export const UploadPage = () => {
       setStageStatus(prev => ({ ...prev, metadata: 'complete' }));
       setCurrentStep('presigning');
       setError('');
+      // Directly trigger the next step here
+      getPresignedUrlMutation.mutate(id);
     },
     onError: (err: any) => {
       setError(err.response?.data?.message || 'Failed to create video metadata');
@@ -130,13 +132,6 @@ export const UploadPage = () => {
       if (videoId) videoUploadApi.reportFailedUpload({ videoId, s3Key, error: errorMessage });
     },
   });
-
-  // Effect to trigger presigned URL generation
-  useEffect(() => {
-    if (currentStep === 'presigning' && videoId) {
-      getPresignedUrlMutation.mutate(videoId);
-    }
-  }, [currentStep, videoId, getPresignedUrlMutation]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const selectedFile = acceptedFiles[0];
