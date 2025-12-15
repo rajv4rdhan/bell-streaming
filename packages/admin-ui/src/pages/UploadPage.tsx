@@ -1,9 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, Button, Input, videoMetadataApi, videoUploadApi } from '@bell-streaming/shared-ui';
 
-type UploadStep = 'metadata' | 'file' | 'presigning' | 'uploading' | 'confirming' | 'success' | 'error';
+type UploadStep = 'metadata' | 'presigning' | 'file' | 'uploading' | 'confirming' | 'success' | 'error';
 
 interface StageStatus {
   metadata: 'pending' | 'complete' | 'error';
@@ -38,165 +38,7 @@ export const UploadPage = () => {
     confirming: 'pending',
   });
 
-  // Step 1: Create video metadata
-  const createMetadataMutation = useMutation({
-    mutationFn: async () => {
-      const response = await videoMetadataApi.createVideo({
-        title,
-        description,
-        tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-        promptForThumbnail: thumbnailPrompt || undefined,
-      });
-      return response.data;
-    },
-    onSuccess: (data) => {
-      console.log('✅ Metadata created:', data);
-      const id = data.video?._id || data._id;
-      console.log('🆔 Video ID:', id);
-      setVideoId(id);
-      setStageStatus(prev => ({ ...prev, metadata: 'complete' }));
-      setCurrentStep('file');
-      setError('');
-    },
-    onError: (err: any) => {
-      console.error('❌ Metadata creation failed:', err);
-      setError(err.response?.data?.message || 'Failed to create video metadata');
-      setStageStatus(prev => ({ ...prev, metadata: 'error' }));
-      setCurrentStep('error');
-    },
-  });
-
-  // Step 2: Upload process (presigned URL, upload, confirm)
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      console.log('🚀 Upload mutation started');
-      console.log('📁 File:', file);
-      console.log('🆔 Video ID:', videoId);
-      
-      if (!file || !videoId) {
-        console.error('❌ Missing file or videoId');
-        throw new Error('No file or video ID');
-      }
-      
-      try {
-        // Stage 1: Get presigned URL
-        console.log('🔑 Getting presigned URL...');
-        setCurrentStep('presigning');
-        const presignedResponse = await videoUploadApi.getPresignedUrl({
-          videoId,
-          contentType: file.type,
-        });
-        console.log('✅ Presigned URL response:', presignedResponse.data);
-        
-        const { presignedUrl: url, s3Key: key } = presignedResponse.data;
-        setPresignedUrl(url);
-        setS3Key(key);
-        setStageStatus(prev => ({ ...prev, presigning: 'complete' }));
-        
-        // Stage 2: Upload to S3
-        console.log('☁️ Uploading to S3...');
-        setCurrentStep('uploading');
-        await videoUploadApi.uploadToS3(url, file, setUploadProgress);
-        console.log('✅ S3 upload complete');
-        setStageStatus(prev => ({ ...prev, uploading: 'complete' }));
-        
-        // Stage 3: Confirm upload
-        console.log('✔️ Confirming upload...');
-        setCurrentStep('confirming');
-        await videoUploadApi.confirmUpload({
-          videoId,
-          s3Key: key,
-        });
-        console.log('✅ Upload confirmed');
-        setStageStatus(prev => ({ ...prev, confirming: 'complete' }));
-        
-        return { s3Key: key };
-      } catch (error) {
-        console.error('💥 Error in upload process:', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      console.log('🎉 Upload successful!');
-      setCurrentStep('success');
-      queryClient.invalidateQueries({ queryKey: ['videos'] });
-    },
-    onError: async (err: any) => {
-      console.error('❌ Upload mutation error:', err);
-      console.error('Error details:', err.response?.data);
-      
-      const errorMessage = err.response?.data?.message || err.message || 'Upload failed';
-      setError(errorMessage);
-      setCurrentStep('error');
-      
-      // Mark the appropriate stage as error based on current step
-      const step = currentStep;
-      if (step === 'presigning') {
-        setStageStatus(prev => ({ ...prev, presigning: 'error' }));
-      } else if (step === 'uploading') {
-        setStageStatus(prev => ({ ...prev, uploading: 'error' }));
-      } else if (step === 'confirming') {
-        setStageStatus(prev => ({ ...prev, confirming: 'error' }));
-      }
-      
-      // Report failed upload
-      if (videoId && s3Key) {
-        try {
-          await videoUploadApi.reportFailedUpload({
-            videoId,
-            s3Key,
-            error: errorMessage,
-          });
-        } catch (e) {
-          console.error('Failed to report upload error:', e);
-        }
-      }
-    },
-  });
-
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (!selectedFile) return;
-
-    // Validate file
-    if (!selectedFile.type.startsWith('video/')) {
-      setError('Please select a valid video file');
-      return;
-    }
-
-    const maxSize = 1024 * 1024 * 1024; // 1GB
-    if (selectedFile.size > maxSize) {
-      setError('File size must be less than 1GB');
-      return;
-    }
-
-    setFile(selectedFile);
-    setError('');
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'video/*': ['.mp4', '.webm', '.mov', '.avi', '.mkv'],
-    },
-    maxFiles: 1,
-    disabled: currentStep !== 'file',
-  });
-
-  const handleCreateMetadata = (e: React.FormEvent) => {
-    e.preventDefault();
-    createMetadataMutation.mutate();
-  };
-
-  const handleUpload = () => {
-    if (!file) {
-      setError('Please select a video file');
-      return;
-    }
-    uploadMutation.mutate();
-  };
-
-  const resetForm = () => {
+  const resetState = () => {
     setTitle('');
     setDescription('');
     setTags('');
@@ -214,299 +56,289 @@ export const UploadPage = () => {
       uploading: 'pending',
       confirming: 'pending',
     });
+    queryClient.invalidateQueries({ queryKey: ['videos'] });
   };
 
-  const getStatusIcon = (status: 'pending' | 'complete' | 'error') => {
-    if (status === 'complete') return '✅';
-    if (status === 'error') return '❌';
-    return '⏳';
+  // Step 1: Create video metadata
+  const createMetadataMutation = useMutation({
+    mutationFn: () => videoMetadataApi.createVideo({
+      title,
+      description,
+      tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+      promptForThumbnail: thumbnailPrompt || undefined,
+    }),
+    onSuccess: (response) => {
+      const id = response.data.video._id;
+      setVideoId(id);
+      setStageStatus(prev => ({ ...prev, metadata: 'complete' }));
+      setCurrentStep('presigning');
+      setError('');
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || 'Failed to create video metadata');
+      setStageStatus(prev => ({ ...prev, metadata: 'error' }));
+      setCurrentStep('error');
+    },
+  });
+
+  // Step 2: Get presigned URL
+  const getPresignedUrlMutation = useMutation({
+    mutationFn: (videoId: string) => videoUploadApi.getPresignedUrl({
+      videoId,
+      contentType: 'video/mp4', // Placeholder, will be replaced by actual file type
+    }),
+    onSuccess: (response) => {
+      const { presignedUrl: url, s3Key: key } = response.data;
+      setPresignedUrl(url);
+      setS3Key(key);
+      setStageStatus(prev => ({ ...prev, presigning: 'complete' }));
+      setCurrentStep('file');
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.message || 'Failed to generate upload URL');
+      setStageStatus(prev => ({ ...prev, presigning: 'error' }));
+      setCurrentStep('error');
+    },
+  });
+
+  // Step 3 & 4: Upload to S3 and confirm
+  const uploadFileMutation = useMutation({
+    mutationFn: async (selectedFile: File) => {
+      if (!presignedUrl) throw new Error('Presigned URL is not available');
+
+      // Stage 3: Upload to S3
+      setCurrentStep('uploading');
+      setStageStatus(prev => ({ ...prev, uploading: 'pending' }));
+      await videoUploadApi.uploadToS3(presignedUrl, selectedFile, setUploadProgress);
+      setStageStatus(prev => ({ ...prev, uploading: 'complete' }));
+
+      // Stage 4: Confirm upload
+      setCurrentStep('confirming');
+      setStageStatus(prev => ({ ...prev, confirming: 'pending' }));
+      await videoUploadApi.confirmUpload({ videoId, s3Key });
+      setStageStatus(prev => ({ ...prev, confirming: 'complete' }));
+    },
+    onSuccess: () => {
+      setCurrentStep('success');
+    },
+    onError: (err: any) => {
+      const errorMessage = err.response?.data?.message || err.message || 'Upload failed';
+      setError(errorMessage);
+      setCurrentStep('error');
+      if (currentStep === 'uploading') setStageStatus(prev => ({ ...prev, uploading: 'error' }));
+      if (currentStep === 'confirming') setStageStatus(prev => ({ ...prev, confirming: 'error' }));
+      if (videoId) videoUploadApi.reportFailedUpload({ videoId, s3Key, error: errorMessage });
+    },
+  });
+
+  // Effect to trigger presigned URL generation
+  useEffect(() => {
+    if (currentStep === 'presigning' && videoId) {
+      getPresignedUrlMutation.mutate(videoId);
+    }
+  }, [currentStep, videoId, getPresignedUrlMutation]);
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const selectedFile = acceptedFiles[0];
+    if (!selectedFile) return;
+
+    if (!selectedFile.type.startsWith('video/')) {
+      setError('Please select a valid video file.');
+      return;
+    }
+    const maxSize = 1024 * 1024 * 1024; // 1GB
+    if (selectedFile.size > maxSize) {
+      setError('File size must be less than 1GB.');
+      return;
+    }
+
+    setFile(selectedFile);
+    setError('');
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'video/*': ['.mp4', '.webm', '.mov'] },
+    maxFiles: 1,
+    disabled: currentStep !== 'file',
+  });
+
+  const handleCreateMetadata = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMetadataMutation.mutate();
+  };
+
+  const handleUpload = () => {
+    if (!file) {
+      setError('Please select a file to upload.');
+      return;
+    }
+    uploadFileMutation.mutate(file);
+  };
+
+  const isProcessing = createMetadataMutation.isPending || getPresignedUrlMutation.isPending || uploadFileMutation.isPending;
+
+  const getStageIndicator = (stage: keyof StageStatus) => {
+    const isCurrent = 
+      (stage === 'metadata' && currentStep === 'metadata') ||
+      (stage === 'presigning' && currentStep === 'presigning') ||
+      (stage === 'uploading' && currentStep === 'uploading') ||
+      (stage === 'confirming' && currentStep === 'confirming');
+
+    if (stageStatus[stage] === 'complete') return '✅';
+    if (stageStatus[stage] === 'error') return '❌';
+    if (isProcessing && isCurrent) return '⏳';
+    return '⚪';
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Upload Video</h1>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold mb-6">Upload New Video</h1>
 
-      {/* Progress Tracker - Show after metadata is created */}
-      {(currentStep !== 'metadata' && currentStep !== 'file') && (
-        <Card padding="lg">
-          <h3 className="text-lg font-semibold mb-4">Upload Progress</h3>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{getStatusIcon(stageStatus.metadata)}</span>
-              <span className="font-medium">1. Metadata Created</span>
+      {currentStep !== 'success' && (
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{getStageIndicator('metadata')}</span>
+            <span>Metadata</span>
+          </div>
+          <span>&rarr;</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{getStageIndicator('presigning')}</span>
+            <span>Preparing</span>
+          </div>
+          <span>&rarr;</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{getStageIndicator('uploading')}</span>
+            <span>Uploading</span>
+          </div>
+          <span>&rarr;</span>
+          <div className="flex items-center space-x-2">
+            <span className="text-lg">{getStageIndicator('confirming')}</span>
+            <span>Confirming</span>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <Card className="mb-6 bg-red-100 border-red-500 text-red-700">
+          <p className="font-bold">Error</p>
+          <p>{error}</p>
+        </Card>
+      )}
+
+      {currentStep === 'metadata' && (
+        <Card>
+          <form onSubmit={handleCreateMetadata}>
+            <div className="space-y-4">
+              <Input
+                label="Video Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., My Awesome Video"
+                required
+              />
+              <Input
+                label="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="A short summary of the video content"
+                required
+              />
+              <Input
+                label="Tags (comma-separated)"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="e.g., tech, tutorial, javascript"
+              />
+              <Input
+                label="Thumbnail Prompt (Optional)"
+                value={thumbnailPrompt}
+                onChange={(e) => setThumbnailPrompt(e.target.value)}
+                placeholder="e.g., A futuristic cityscape at sunset"
+              />
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{getStatusIcon(stageStatus.presigning)}</span>
-              <span className="font-medium">2. Presigned URL Generated</span>
-              {stageStatus.presigning === 'complete' && currentStep === 'presigning' && (
-                <span className="text-xs text-gray-500 ml-auto">✓ Ready to upload</span>
-              )}
+            <div className="mt-6">
+              <Button
+                type="submit"
+                loading={createMetadataMutation.isPending}
+                disabled={createMetadataMutation.isPending}
+              >
+                Next: Prepare Upload
+              </Button>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{getStatusIcon(stageStatus.uploading)}</span>
-              <span className="font-medium">3. Uploading to S3</span>
-              {currentStep === 'uploading' && (
-                <span className="text-xs text-blue-600 ml-auto">{uploadProgress}%</span>
-              )}
+          </form>
+        </Card>
+      )}
+
+      {currentStep === 'presigning' && (
+        <Card className="text-center">
+          <p className="text-lg font-semibold">⏳ Preparing secure upload...</p>
+        </Card>
+      )}
+
+      {currentStep === 'file' && (
+        <Card>
+          <div
+            {...getRootProps()}
+            className={`p-10 border-2 border-dashed rounded-lg text-center cursor-pointer
+              ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+          >
+            <input {...getInputProps()} />
+            {file ? (
+              <p className="font-semibold">{file.name}</p>
+            ) : isDragActive ? (
+              <p>Drop the video file here ...</p>
+            ) : (
+              <p>Drag 'n' drop a video file here, or click to select file</p>
+            )}
+          </div>
+          {file && (
+            <div className="mt-6">
+              <Button onClick={handleUpload} loading={uploadFileMutation.isPending} disabled={uploadFileMutation.isPending}>
+                Upload Video
+              </Button>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{getStatusIcon(stageStatus.confirming)}</span>
-              <span className="font-medium">4. Confirming Upload</span>
-            </div>
+          )}
+        </Card>
+      )}
+
+      {(currentStep === 'uploading' || currentStep === 'confirming') && (
+        <Card>
+          <div className="text-center">
+            <p className="text-lg font-semibold mb-2">
+              {currentStep === 'uploading' && 'Uploading video...'}
+              {currentStep === 'confirming' && 'Finalizing upload...'}
+            </p>
+            {currentStep === 'uploading' && (
+              <div className="w-full bg-gray-200 rounded-full h-4">
+                <div
+                  className="bg-blue-500 h-4 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            )}
+            <p className="mt-2 text-gray-600">{file?.name}</p>
           </div>
         </Card>
       )}
 
-      <Card padding="lg">
-        {/* Step 1: Metadata Form */}
-        {currentStep === 'metadata' && (
-          <form onSubmit={handleCreateMetadata} className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Step 1: Video Information</h2>
-              <p className="text-sm text-gray-600 mb-6">
-                Provide details about your video before uploading the file.
-              </p>
-            </div>
-
-            <Input
-              label="Video Title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter video title"
-              required
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter video description"
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-
-            <Input
-              label="Tags (comma-separated)"
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="tech, tutorial, education"
-            />
-
-            <Input
-              label="Thumbnail Generation Prompt (optional)"
-              type="text"
-              value={thumbnailPrompt}
-              onChange={(e) => setThumbnailPrompt(e.target.value)}
-              placeholder="A modern tech tutorial screenshot"
-            />
-
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full"
-              loading={createMetadataMutation.isPending}
-            >
-              Next: Select Video File
-            </Button>
-          </form>
-        )}
-
-        {/* Step 2: File Selection */}
-        {currentStep === 'file' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Step 2: Select Video File</h2>
-              <p className="text-sm text-gray-600">
-                Video metadata created successfully. Now upload your video file.
-              </p>
-            </div>
-
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
-                isDragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <input {...getInputProps()} />
-              {file ? (
-                <div>
-                  <div className="text-6xl mb-4">✅</div>
-                  <p className="text-lg font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {(file.size / (1024 * 1024)).toFixed(2)} MB
-                  </p>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setFile(null);
-                    }}
-                    className="mt-4"
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <div>
-                  <div className="text-6xl mb-4">📹</div>
-                  <p className="text-lg font-medium text-gray-900">
-                    {isDragActive ? 'Drop video here' : 'Drag & drop video here'}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    or click to browse (MP4, WebM, MOV, AVI, MKV • Max 1GB)
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={resetForm}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                className="flex-1"
-                onClick={handleUpload}
-                disabled={!file}
-              >
-                Upload Video
-              </Button>
-            </div>
+      {currentStep === 'success' && (
+        <Card className="text-center bg-green-50">
+          <h2 className="text-2xl font-bold text-green-700 mb-2">Upload Successful!</h2>
+          <p>Your video has been uploaded and is now processing.</p>
+          <div className="mt-4">
+            <Button onClick={resetState}>Upload Another Video</Button>
           </div>
-        )}
+        </Card>
+      )}
 
-        {/* Step 3: Presigning */}
-        {currentStep === 'presigning' && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Generating Presigned URL...</h2>
-              <p className="text-sm text-gray-600">
-                Creating secure upload link to AWS S3
-              </p>
-            </div>
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Uploading */}
-        {currentStep === 'uploading' && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Uploading to S3...</h2>
-              <p className="text-sm text-gray-600">
-                Please don't close this page while upload is in progress.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>{file?.name}</span>
-                <span>{uploadProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
-                <div
-                  className="bg-blue-600 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 5: Confirming */}
-        {currentStep === 'confirming' && (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">Confirming Upload...</h2>
-              <p className="text-sm text-gray-600">
-                Verifying upload and updating metadata
-              </p>
-            </div>
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600"></div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 6: Success */}
-        {currentStep === 'success' && (
-          <div className="space-y-6 text-center py-8">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-semibold text-gray-900">Upload Successful!</h2>
-            <p className="text-gray-600">
-              Your video has been uploaded successfully and is now being processed.
-            </p>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-800">
-                <strong>Video ID:</strong> {videoId}
-              </p>
-            </div>
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="primary"
-                onClick={resetForm}
-              >
-                Upload Another Video
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => window.location.href = '/videos'}
-              >
-                View All Videos
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {currentStep === 'error' && (
-          <div className="space-y-6 text-center py-8">
-            <div className="text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-semibold text-gray-900">Upload Failed</h2>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="primary"
-                onClick={resetForm}
-              >
-                Try Again
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* General Error Message */}
-        {error && currentStep !== 'error' && (
-          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-      </Card>
+      {currentStep === 'error' && (
+         <Card className="text-center">
+           <h2 className="text-2xl font-bold text-red-700 mb-2">Upload Failed</h2>
+           <p className="mb-4">{error}</p>
+           <Button onClick={resetState}>Try Again</Button>
+         </Card>
+      )}
     </div>
   );
 };

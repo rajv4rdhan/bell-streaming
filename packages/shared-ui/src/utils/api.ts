@@ -6,6 +6,7 @@ import type {
   User,
   Video,
   CreateVideoRequest,
+  CreateVideoResponse,
   UpdateVideoRequest,
   PresignedUrlRequest,
   PresignedUrlResponse,
@@ -98,7 +99,7 @@ export const authApi = {
 // Video Metadata API (Admin)
 export const videoMetadataApi = {
   createVideo: (data: CreateVideoRequest) => 
-    apiClient.post<Video>('/admin/videos', data),
+    apiClient.post<CreateVideoResponse>('/admin/videos', data),
   
   getAllVideos: (params?: { search?: string; page?: number; limit?: number }) => 
     apiClient.get<{ videos: Video[]; total: number }>('/admin/videos', { params }),
@@ -131,7 +132,11 @@ export const videoUploadApi = {
     apiClient.post<PresignedUrlResponse>('/uploads/presigned-url', data),
   
   uploadToS3: async (presignedUrl: string, file: File, onProgress?: (progress: number) => void) => {
-    return axios.put(presignedUrl, file, {
+    // Read the file as an ArrayBuffer to ensure the body is sent correctly.
+    // Sending a File object directly can sometimes result in an empty body with axios.
+    const fileBuffer = await file.arrayBuffer();
+
+    return axios.put(presignedUrl, fileBuffer, {
       headers: {
         'Content-Type': file.type,
       },

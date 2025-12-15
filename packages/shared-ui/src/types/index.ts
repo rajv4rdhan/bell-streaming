@@ -29,6 +29,10 @@ export interface Video {
   createdAt?: string;
   updatedAt?: string;
 }
+export interface CreateVideoResponse {
+  message: string;
+  video: Video;
+}
 
 export interface VideoStats {
   videoId: string;

@@ -45,18 +45,28 @@ export class S3Service {
 
   async verifyFileExists(s3Key: string): Promise<boolean> {
     try {
+      console.log('[S3] Checking if file exists:', { bucket: this.bucketName, key: s3Key });
       const command = new HeadObjectCommand({
         Bucket: this.bucketName,
         Key: s3Key,
       });
 
-      await this.s3Client.send(command);
+      const response = await this.s3Client.send(command);
+      console.log('[S3] File exists, size:', response.ContentLength);
       return true;
     } catch (error: any) {
+      console.error('[S3] Error checking file:', {
+        key: s3Key,
+        errorName: error.name,
+        errorCode: error.Code,
+        statusCode: error.$metadata?.httpStatusCode,
+        message: error.message,
+      });
+      
       if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
         return false;
       }
-      throw error;
+      throw new AppError(`S3 error: ${error.message}`, 500);
     }
   }
 

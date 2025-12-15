@@ -75,6 +75,8 @@ export const confirmUpload = async (
     const { videoId, s3Key } = req.body as ConfirmUploadInput;
     const userId = req.user?.userId;
 
+    console.log('[confirmUpload] Request received:', { videoId, s3Key, userId });
+
     if (!userId) {
       throw new AppError('User not authenticated', 401);
     }
@@ -85,13 +87,18 @@ export const confirmUpload = async (
     }
 
     // Verify the file exists in S3 before confirming
+    console.log('[confirmUpload] Verifying file exists:', s3Key);
     const exists = await s3Service.verifyFileExists(s3Key);
     if (!exists) {
+      console.error('[confirmUpload] File not found in S3:', s3Key);
       throw new AppError('File not found in S3. Upload may have failed.', 404);
     }
+    console.log('[confirmUpload] File exists in S3');
 
     // Get file metadata from S3
+    console.log('[confirmUpload] Getting file metadata');
     const fileMetadata = await s3Service.getFileMetadata(s3Key);
+    console.log('[confirmUpload] File metadata retrieved:', fileMetadata);
 
     // Update video status to completed
     await videoMetadataService.updateUploadStatus(videoId, 'completed', adminToken);
@@ -107,6 +114,15 @@ export const confirmUpload = async (
       uploadedAt: fileMetadata.lastModified,
     });
   } catch (error) {
+    console.error('[confirmUpload] Error occurred:', error);
+    if (error instanceof Error) {
+      console.error('[confirmUpload] Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+    
     // Auto-mark as failed if confirmation fails
     try {
       const { videoId } = req.body as ConfirmUploadInput;
