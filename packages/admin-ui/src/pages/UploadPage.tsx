@@ -71,10 +71,8 @@ export const UploadPage = () => {
       const id = response.data.video._id;
       setVideoId(id);
       setStageStatus(prev => ({ ...prev, metadata: 'complete' }));
-      setCurrentStep('presigning');
+      setCurrentStep('file');
       setError('');
-      // Directly trigger the next step here
-      getPresignedUrlMutation.mutate(id);
     },
     onError: (err: any) => {
       setError(err.response?.data?.message || 'Failed to create video metadata');
@@ -85,16 +83,17 @@ export const UploadPage = () => {
 
   // Step 2: Get presigned URL
   const getPresignedUrlMutation = useMutation({
-    mutationFn: (videoId: string) => videoUploadApi.getPresignedUrl({
-      videoId,
-      contentType: 'video/mp4', // Placeholder, will be replaced by actual file type
-    }),
+    mutationFn: ({ videoId, contentType }: { videoId: string; contentType: string }) => 
+      videoUploadApi.getPresignedUrl({ videoId, contentType }),
     onSuccess: (response) => {
       const { presignedUrl: url, s3Key: key } = response.data;
       setPresignedUrl(url);
       setS3Key(key);
       setStageStatus(prev => ({ ...prev, presigning: 'complete' }));
-      setCurrentStep('file');
+      // Automatically start the upload after getting the presigned URL
+      if (file && videoId) {
+        uploadFileMutation.mutate({ file, presignedUrl: url, s3Key: key, videoId });
+      }
     },
     onError: (err: any) => {
       setError(err.response?.data?.message || 'Failed to generate upload URL');
@@ -105,19 +104,19 @@ export const UploadPage = () => {
 
   // Step 3 & 4: Upload to S3 and confirm
   const uploadFileMutation = useMutation({
-    mutationFn: async (selectedFile: File) => {
-      if (!presignedUrl) throw new Error('Presigned URL is not available');
+    mutationFn: async ({ file: selectedFile, presignedUrl: url, s3Key: key, videoId: vId }: { file: File; presignedUrl: string; s3Key: string; videoId: string }) => {
+      if (!url) throw new Error('Presigned URL is not available');
 
       // Stage 3: Upload to S3
       setCurrentStep('uploading');
       setStageStatus(prev => ({ ...prev, uploading: 'pending' }));
-      await videoUploadApi.uploadToS3(presignedUrl, selectedFile, setUploadProgress);
+      await videoUploadApi.uploadToS3(url, selectedFile, setUploadProgress);
       setStageStatus(prev => ({ ...prev, uploading: 'complete' }));
 
       // Stage 4: Confirm upload
       setCurrentStep('confirming');
       setStageStatus(prev => ({ ...prev, confirming: 'pending' }));
-      await videoUploadApi.confirmUpload({ videoId, s3Key });
+      await videoUploadApi.confirmUpload({ videoId: vId, s3Key: key });
       setStageStatus(prev => ({ ...prev, confirming: 'complete' }));
     },
     onSuccess: () => {
@@ -127,9 +126,8 @@ export const UploadPage = () => {
       const errorMessage = err.response?.data?.message || err.message || 'Upload failed';
       setError(errorMessage);
       setCurrentStep('error');
-      if (currentStep === 'uploading') setStageStatus(prev => ({ ...prev, uploading: 'error' }));
-      if (currentStep === 'confirming') setStageStatus(prev => ({ ...prev, confirming: 'error' }));
-      if (videoId) videoUploadApi.reportFailedUpload({ videoId, s3Key, error: errorMessage });
+      setStageStatus(prev => ({ ...prev, uploading: 'error', confirming: 'error' }));
+      if (videoId && s3Key) videoUploadApi.reportFailedUpload({ videoId, s3Key, error: errorMessage });
     },
   });
 
@@ -168,7 +166,14 @@ export const UploadPage = () => {
       setError('Please select a file to upload.');
       return;
     }
-    uploadFileMutation.mutate(file);
+    if (!videoId) {
+      setError('Video ID is missing. Please try again.');
+      return;
+    }
+    // Generate presigned URL with the actual file's content type
+    setCurrentStep('presigning');
+    setStageStatus(prev => ({ ...prev, presigning: 'pending' }));
+    getPresignedUrlMutation.mutate({ videoId, contentType: file.type });
   };
 
   const isProcessing = createMetadataMutation.isPending || getPresignedUrlMutation.isPending || uploadFileMutation.isPending;

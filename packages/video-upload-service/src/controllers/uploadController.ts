@@ -97,40 +97,44 @@ export const confirmUpload = async (
 
     // Get file metadata from S3
     console.log('[confirmUpload] Getting file metadata');
+    console.log('[confirmUpload] Getting file metadata for s3Key:', s3Key);
     const fileMetadata = await s3Service.getFileMetadata(s3Key);
-    console.log('[confirmUpload] File metadata retrieved:', fileMetadata);
+    console.log('[confirmUpload] S3 file metadata:', JSON.stringify(fileMetadata, null, 2));
 
-    // Update video status to completed
-    await videoMetadataService.updateUploadStatus(videoId, 'completed', adminToken);
-
-    const s3Url = s3Service.getS3ObjectUrl(s3Key);
-
-    res.status(200).json({
-      message: 'Upload confirmed successfully',
-      videoId,
-      s3Key,
-      s3Url,
-      fileSize: fileMetadata.size,
-      uploadedAt: fileMetadata.lastModified,
-    });
-  } catch (error) {
-    console.error('[confirmUpload] Error occurred:', error);
-    if (error instanceof Error) {
-      console.error('[confirmUpload] Error details:', {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
+    if (!fileMetadata || fileMetadata.size === 0) {
+      console.error('[confirmUpload] File is empty or metadata is missing.', { s3Key, fileMetadata });
+      throw new AppError('Uploaded file is empty or could not be verified.', 400);
     }
-    
-    // Auto-mark as failed if confirmation fails
+
+    console.log('[confirmUpload] File verified successfully. Size:', fileMetadata.size, 'bytes');
+
+    // Update video status to "completed"
+    console.log('[confirmUpload] Updating video status to completed for videoId:', videoId);
+    try {
+      await videoMetadataService.updateUploadStatus(videoId, 'completed', adminToken);
+      console.log('[confirmUpload] Video status updated successfully');
+    } catch (statusError) {
+      console.error('[confirmUpload] Failed to update video status:', statusError);
+      throw statusError;
+    }
+
+    // TODO: Here you would trigger the next step, e.g., sending a message
+    // to a queue for the thumbnail generator and video processing service.
+
+    res.status(200).json({ message: 'Upload confirmed and video is processing.' });
+  } catch (error) {
+    console.error('[confirmUpload] Error caught:', error);
+    // Attempt to revert status if confirmation fails
     try {
       const { videoId } = req.body as ConfirmUploadInput;
       const adminToken = req.headers.authorization?.substring(7);
       if (videoId && adminToken) {
+        console.log('[confirmUpload] Reverting video status to "failed" for videoId:', videoId);
         await videoMetadataService.updateUploadStatus(videoId, 'failed', adminToken);
       }
-    } catch {}
+    } catch (revertError) {
+      console.error('[confirmUpload] Failed to revert video status:', revertError);
+    }
     next(error);
   }
 };
