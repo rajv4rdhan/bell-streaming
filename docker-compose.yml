@@ -96,6 +96,9 @@ services:
     build:
       context: .
       dockerfile: packages/thumbnail-generator/Dockerfile
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
     environment:
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}

@@ -78,23 +78,15 @@ Resources:
           git checkout ${GitHubBranch}
           
           # Configure Doppler
-          echo "${DopplerToken}" | doppler configure set token --scope /opt/bell-streaming
+          export DOPPLER_TOKEN="${DopplerToken}"
           
-          # Start services with Doppler
+          # Export Doppler secrets to .env file
           cd /opt/bell-streaming
-          doppler run -- docker-compose -f docker-compose.prod.yml up -d
+          doppler secrets download --no-file --format env > .env
           
-          # Create update script
-          cat > /opt/bell-streaming/update.sh << 'UPDATE_EOF'
-          #!/bin/bash
-          cd /opt/bell-streaming
-          git pull origin ${GitHubBranch}
-          doppler run -- docker-compose -f docker-compose.prod.yml pull
-          doppler run -- docker-compose -f docker-compose.prod.yml up -d --force-recreate
-          docker image prune -f
-          UPDATE_EOF
+          # Build and start services with docker-compose
+          docker-compose up --build -d
           
-          chmod +x /opt/bell-streaming/update.sh
           
           # Create systemd service
           cat > /etc/systemd/system/bell-streaming.service << 'SERVICE_EOF'
@@ -107,8 +99,8 @@ Resources:
           Type=oneshot
           RemainAfterExit=yes
           WorkingDirectory=/opt/bell-streaming
-          ExecStart=/usr/bin/doppler run -- /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
-          ExecStop=/usr/local/bin/docker-compose -f docker-compose.prod.yml down
+          ExecStart=/usr/local/bin/docker-compose up -d
+          ExecStop=/usr/local/bin/docker-compose down
           
           [Install]
           WantedBy=multi-user.target
