@@ -1,40 +1,40 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Network resources for Bell Streaming'
+Description: 'Network resources for Bell Streaming Platform'
 
 Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
-      EnableDnsSupport: true
       EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: BellStreaming-VPC
-
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      AvailabilityZone: !Select [ 0, !GetAZs '' ]
-      MapPublicIpOnLaunch: true
-      Tags:
-        - Key: Name
-          Value: BellStreaming-Public-Subnet
+          Value: bell-streaming-vpc
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: BellStreaming-IGW
+          Value: bell-streaming-igw
 
-  VPCGatewayAttachment:
+  AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: bell-streaming-public-subnet
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -42,11 +42,11 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: BellStreaming-Public-RT
+          Value: bell-streaming-public-rt
 
   PublicRoute:
     Type: AWS::EC2::Route
-    DependsOn: VPCGatewayAttachment
+    DependsOn: AttachGateway
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
@@ -60,13 +60,11 @@ Resources:
 
 Outputs:
   VPCId:
-    Description: 'VPC ID'
     Value: !Ref VPC
     Export:
-      Name: !Sub '${AWS::StackName}-VPCId'
-  
+      Name: !Sub '${AWS::StackName}-VPC'
+
   PublicSubnetId:
-    Description: 'Public Subnet ID'
     Value: !Ref PublicSubnet
     Export:
-      Name: !Sub '${AWS::StackName}-PublicSubnetId'
+      Name: !Sub '${AWS::StackName}-PublicSubnet'

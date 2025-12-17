@@ -1,0 +1,47 @@
+name: Update CloudFormation Stack
+
+on:
+  workflow_run:
+    workflows: ["Publish Docker Images"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  STACK_NAME: bell-streaming
+
+jobs:
+  update-stack:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Update CloudFormation stack
+        run: |
+          aws cloudformation update-stack \
+            --stack-name ${{ env.STACK_NAME }} \
+            --template-body file://infra/cloudformation/main.yml \
+            --parameters \
+              ParameterKey=KeyName,UsePreviousValue=true \
+              ParameterKey=GitHubPAT,UsePreviousValue=true \
+              ParameterKey=GitHubRepo,UsePreviousValue=true \
+              ParameterKey=GitHubBranch,UsePreviousValue=true \
+              ParameterKey=DopplerToken,UsePreviousValue=true \
+            --region ${{ env.AWS_REGION }}
+          
+          aws cloudformation wait stack-update-complete \
+            --stack-name ${{ env.STACK_NAME }} \
+            --region ${{ env.AWS_REGION }}

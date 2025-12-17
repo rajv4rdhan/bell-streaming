@@ -15,11 +15,18 @@ on:
           - create
           - update
           - delete
-        default: 'update'
-      instance-type:
-        description: 'EC2 Instance Type'
+        default: 'create'
+      key-name:
+        description: 'EC2 Key Pair Name'
+        required: true
+      github-repo:
+        description: 'GitHub Repository (owner/repo)'
         required: false
-        default: 't3.2xlarge'
+        default: 'rajv4rdhan/bellStreaming'
+      github-branch:
+        description: 'GitHub Branch'
+        required: false
+        default: 'main'
       region:
         description: 'AWS Region'
         required: false
@@ -85,24 +92,18 @@ jobs:
           fi
 
       - name: Create CloudFormation stack
-        if: github.event.inputs.action == 'create' && steps.check-stack.outputs.exists == 'false'
-        run: |
-          aws cloudformation create-stack \
-            --stack-name ${{ github.event.inputs.stack-name }} \
-            --template-body file://infra/cloudformation/main.yml \
-            --capabilities CAPABILITY_IAM \
-            --parameters \
-              ParameterKey=KeyName,ParameterValue=${{ secrets.EC2_KEY_NAME }} \
-              ParameterKey=InstanceType,ParameterValue=${{ github.event.inputs.instance-type }} \
-              ParameterKey=MongoDbUri,ParameterValue=${{ secrets.MONGODB_URI }} \
+        if: github.event.inGitHubPAT,ParameterValue=${{ secrets.GH_PAT }} \
+              ParameterKey=GitHubRepo,ParameterValue=${{ github.event.inputs.github-repo }} \
+              ParameterKey=GitHubBranch,ParameterValue=${{ github.event.inputs.github-branch }} \
+              ParameterKey=DopplerToken,ParameterValue=${{ secrets.DOPPLER_TOKEN }} \
               ParameterKey=JwtSecret,ParameterValue=${{ secrets.JWT_SECRET }} \
               ParameterKey=JwtRefreshSecret,ParameterValue=${{ secrets.JWT_REFRESH_SECRET }} \
+              ParameterKey=AwsRegion,ParameterValue=${{ secrets.AWS_S3_REGION }} \
               ParameterKey=AwsAccessKeyId,ParameterValue=${{ secrets.AWS_S3_ACCESS_KEY_ID }} \
               ParameterKey=AwsSecretAccessKey,ParameterValue=${{ secrets.AWS_S3_SECRET_ACCESS_KEY }} \
               ParameterKey=S3BucketName,ParameterValue=${{ secrets.S3_BUCKET_NAME }} \
               ParameterKey=FreepikApiKey,ParameterValue=${{ secrets.FREEPIK_API_KEY }} \
               ParameterKey=WebhookUrl,ParameterValue=${{ secrets.WEBHOOK_URL }} \
-              ParameterKey=TemplatesBucketName,ParameterValue=${TEMPLATES_BUCKET} \
             --region ${{ env.AWS_REGION }}
           
           echo "⏳ Waiting for stack creation to complete..."
@@ -118,24 +119,16 @@ jobs:
           aws cloudformation update-stack \
             --stack-name ${{ github.event.inputs.stack-name }} \
             --template-body file://infra/cloudformation/main.yml \
-            --capabilities CAPABILITY_IAM \
             --parameters \
-              ParameterKey=KeyName,ParameterValue=${{ secrets.EC2_KEY_NAME }} \
-              ParameterKey=InstanceType,ParameterValue=${{ github.event.inputs.instance-type }} \
-              ParameterKey=MongoDbUri,ParameterValue=${{ secrets.MONGODB_URI }} \
-              ParameterKey=JwtSecret,ParameterValue=${{ secrets.JWT_SECRET }} \
-              ParameterKey=JwtRefreshSecret,ParameterValue=${{ secrets.JWT_REFRESH_SECRET }} \
-              ParameterKey=AwsAccessKeyId,ParameterValue=${{ secrets.AWS_S3_ACCESS_KEY_ID }} \
-              ParameterKey=AwsSecretAccessKey,ParameterValue=${{ secrets.AWS_S3_SECRET_ACCESS_KEY }} \
-              ParameterKey=S3BucketName,ParameterValue=${{ secrets.S3_BUCKET_NAME }} \
-              ParameterKey=FreepikApiKey,ParameterValue=${{ secrets.FREEPIK_API_KEY }} \
-              ParameterKey=WebhookUrl,ParameterValue=${{ secrets.WEBHOOK_URL }} \
-              ParameterKey=TemplatesBucketName,ParameterValue=${TEMPLATES_BUCKET} \
-            --region ${{ env.AWS_REGION }} || echo "No updates to perform"
-          
-          echo "⏳ Waiting for stack update to complete..."
-          aws cloudformation wait stack-update-complete \
-            --stack-name ${{ github.event.inputs.stack-name }} \
+              ParameterKey=KeyName,UsePreviousValue=true \
+              ParameterKey=GitHubPAT,UsePreviousValue=true \
+              ParameterKey=JwtRefreshSecret,UsePreviousValue=true \
+              ParameterKey=AwsRegion,UsePreviousValue=true \
+              ParameterKey=AwsAccessKeyId,UsePreviousValue=true \
+              ParameterKey=GitHubPAT,UsePreviousValue=true \
+              ParameterKey=GitHubRepo,UsePreviousValue=true \
+              ParameterKey=GitHubBranch,UsePreviousValue=true \
+              ParameterKey=DopplerTokenvent.inputs.stack-name }} \
             --region ${{ env.AWS_REGION }} || echo "Update completed or no changes"
           
           echo "✅ Stack updated successfully"
