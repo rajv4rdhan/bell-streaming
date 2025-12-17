@@ -70,12 +70,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
-      - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v3
-        if: matrix.service.name == 'auth-service'
-        with:
-          username: rajv4rdhan
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: rajv4rdhan/bell-streaming-${{ matrix.service.name }}
-          short-description: Bell Streaming Platform - ${{ matrix.service.name }}
-          readme-filepath: ./DEPLOYMENT.md
