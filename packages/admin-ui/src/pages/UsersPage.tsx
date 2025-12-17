@@ -53,75 +53,93 @@ export const UsersPage = () => {
   };
 
   if (isLoading) {
-    return <Spinner size="lg" className="mt-20" />;
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-slate-500 mb-1">User Directory</h2>
+          <p className="text-slate-600">{users?.length || 0} total users</p>
+        </div>
+      </div>
 
-      <Card padding="none">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-premium overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  User
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100">
               {users?.map((user: User) => (
-                <tr key={user._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">
-                      {user.firstName} {user.lastName}
+                <tr key={user._id} className="hover:bg-slate-50 transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-semibold">
+                        {user.firstName?.charAt(0).toUpperCase()}{user.lastName?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-medium text-slate-900">
+                          {user.firstName} {user.lastName}
+                        </p>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.email}
+                  <td className="px-6 py-4">
+                    <p className="text-sm text-slate-600">{user.email}</p>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4">
                     <span
-                      className={`px-2 py-1 text-xs font-semibold rounded ${
+                      className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                         user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-blue-100 text-blue-800'
+                          ? 'bg-violet-100 text-violet-700'
+                          : 'bg-blue-100 text-blue-700'
                       }`}
                     >
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
-                    <button
-                      onClick={() => handleRoleToggle(user)}
-                      className="text-blue-600 hover:text-blue-800"
-                      disabled={changeRoleMutation.isPending}
-                    >
-                      Change Role
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(user)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Delete
-                    </button>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-3">
+                      <button
+                        onClick={() => handleRoleToggle(user)}
+                        className="text-sm font-medium text-primary-600 hover:text-primary-800 transition-colors"
+                        disabled={changeRoleMutation.isPending}
+                      >
+                        Change Role
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(user)}
+                        className="text-sm font-medium text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
@@ -131,7 +149,7 @@ export const UsersPage = () => {
           title="Delete User"
         >
           <div className="space-y-4">
-            <p className="text-gray-700">
+            <p className="text-slate-700">
               Are you sure you want to delete user <strong>{selectedUser.firstName} {selectedUser.lastName}</strong>?
               This action cannot be undone.
             </p>

@@ -4,6 +4,7 @@ export * from './components/Input';
 export * from './components/Card';
 export * from './components/Modal';
 export * from './components/VideoPlayer';
+export * from './components/PremiumVideoPlayer';
 export * from './components/Spinner';
 
 // Hooks

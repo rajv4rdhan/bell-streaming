@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Spinner, VideoPlayer, Button, streamingApi, formatNumber, formatRelativeTime } from '@bell-streaming/shared-ui';
+import { Spinner, PremiumVideoPlayer, Button, streamingApi, formatNumber, formatRelativeTime } from '@bell-streaming/shared-ui';
 import { VideoCard } from '../components/VideoCard';
 import type { Video } from '@bell-streaming/shared-ui';
 
@@ -57,13 +57,22 @@ export const VideoPage = () => {
       {/* Main Video Section */}
       <div className="lg:col-span-2 space-y-4">
         {/* Video Player */}
-        <div className="bg-black rounded-lg overflow-hidden">
-          <VideoPlayer
-            src={video.videoUrl || streamingApi.streamVideo(videoId!)}
-            poster={video.thumbnailUrl}
-            controls
-            autoPlay
-          />
+        <div className="rounded-lg overflow-hidden">
+          {video.s3Key ? (
+            <PremiumVideoPlayer
+              url={`${import.meta.env.VITE_CLOUDFRONT_URL}/${video.s3Key}`}
+              poster={video.thumbnailUrl}
+            />
+          ) : (
+            <div className="aspect-video bg-black rounded-lg flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <p>Video not available</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Video Info */}

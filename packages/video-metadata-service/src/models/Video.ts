@@ -31,6 +31,9 @@ export interface IVideo extends Document {
   updatedAt: Date;
 }
 
+// Default 16:9 placeholder thumbnail
+const DEFAULT_THUMBNAIL = 'https://drmcv4972t1k7.cloudfront.net/Placeholder800x450.jpeg';
+
 const videoSchema = new Schema<IVideo>(
   {
     title: { type: String, required: true, trim: true },
@@ -50,7 +53,7 @@ const videoSchema = new Schema<IVideo>(
     language: { type: String },
     releaseDate: { type: Date },
     promptForThumbnail: { type: String },
-    thumbnailUrl: { type: String },
+    thumbnailUrl: { type: String, default: DEFAULT_THUMBNAIL },
     uploadStatus: {
       type: String,
       enum: Object.values(UploadStatus),

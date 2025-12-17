@@ -17,6 +17,7 @@ export interface Video {
   tags?: string[];
   thumbnailUrl?: string;
   videoUrl?: string;
+  s3Bucket?: string;
   duration?: number;
   views?: number;
   uploadedAt?: string;

@@ -1,0 +1,165 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'packages/**'
+      - 'nginx/**'
+      - 'docker-compose.prod.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to build (comma-separated: nginx,auth-service,video-metadata-service,video-upload-service,streaming-service,thumbnail-generator or all)'
+        required: false
+        default: 'all'
+
+env:
+  DOCKER_USERNAME: rajv4rdhan
+  REGISTRY: docker.io
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      nginx: ${{ steps.filter.outputs.nginx }}
+      auth-service: ${{ steps.filter.outputs.auth-service }}
+      video-metadata-service: ${{ steps.filter.outputs.video-metadata-service }}
+      video-upload-service: ${{ steps.filter.outputs.video-upload-service }}
+      streaming-service: ${{ steps.filter.outputs.streaming-service }}
+      thumbnail-generator: ${{ steps.filter.outputs.thumbnail-generator }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            nginx:
+              - 'nginx/**'
+            auth-service:
+              - 'packages/auth-service/**'
+            video-metadata-service:
+              - 'packages/video-metadata-service/**'
+            video-upload-service:
+              - 'packages/video-upload-service/**'
+            streaming-service:
+              - 'packages/streaming-service/**'
+            thumbnail-generator:
+              - 'packages/thumbnail-generator/**'
+
+  build-and-push:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - name: nginx
+            path: nginx
+            dockerfile: nginx/Dockerfile
+            image: bell-streaming-nginx
+          - name: auth-service
+            path: packages/auth-service
+            dockerfile: packages/auth-service/Dockerfile
+            image: bell-streaming-auth-service
+          - name: video-metadata-service
+            path: packages/video-metadata-service
+            dockerfile: packages/video-metadata-service/Dockerfile
+            image: bell-streaming-video-metadata-service
+          - name: video-upload-service
+            path: packages/video-upload-service
+            dockerfile: packages/video-upload-service/Dockerfile
+            image: bell-streaming-video-upload-service
+          - name: streaming-service
+            path: packages/streaming-service
+            dockerfile: packages/streaming-service/Dockerfile
+            image: bell-streaming-streaming-service
+          - name: thumbnail-generator
+            path: packages/thumbnail-generator
+            dockerfile: packages/thumbnail-generator/Dockerfile
+            image: bell-streaming-thumbnail-generator
+    
+    steps:
+      - name: Check if should build
+        id: should-build
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SERVICES="${{ github.event.inputs.services }}"
+            if [[ "$SERVICES" == "all" ]] || [[ "$SERVICES" == *"${{ matrix.service.name }}"* ]]; then
+              echo "build=true" >> $GITHUB_OUTPUT
+            else
+              echo "build=false" >> $GITHUB_OUTPUT
+            fi
+          elif [[ "${{ needs.detect-changes.outputs[matrix.service.name] }}" == "true" ]]; then
+            echo "build=true" >> $GITHUB_OUTPUT
+          else
+            echo "build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout code
+        if: steps.should-build.outputs.build == 'true'
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        if: steps.should-build.outputs.build == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: steps.should-build.outputs.build == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Extract metadata
+        if: steps.should-build.outputs.build == 'true'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_USERNAME }}/${{ matrix.service.image }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        if: steps.should-build.outputs.build == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Image digest
+        if: steps.should-build.outputs.build == 'true'
+        run: |
+          echo "Image built and pushed: ${{ matrix.service.image }}"
+          echo "Tags: ${{ steps.meta.outputs.tags }}"
+
+  summary:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build and push workflow completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

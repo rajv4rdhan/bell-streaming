@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security Group for Bell Streaming'
+
+Parameters:
+  VPCId:
+    Type: String
+    Description: 'VPC ID from network stack'
+
+Resources:
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPCId
+      GroupDescription: 'Security group for Bell Streaming EC2 instance'
+      SecurityGroupIngress:
+        # SSH
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: 'SSH access'
+        # Nginx
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp: 0.0.0.0/0
+          Description: 'Nginx'
+        # Auth Service
+        - IpProtocol: tcp
+          FromPort: 3001
+          ToPort: 3001
+          CidrIp: 0.0.0.0/0
+          Description: 'Auth Service'
+        # Video Metadata Service
+        - IpProtocol: tcp
+          FromPort: 3002
+          ToPort: 3002
+          CidrIp: 0.0.0.0/0
+          Description: 'Video Metadata Service'
+        # Streaming Service
+        - IpProtocol: tcp
+          FromPort: 3003
+          ToPort: 3003
+          CidrIp: 0.0.0.0/0
+          Description: 'Streaming Service'
+        # Video Upload Service
+        - IpProtocol: tcp
+          FromPort: 3004
+          ToPort: 3004
+          CidrIp: 0.0.0.0/0
+          Description: 'Video Upload Service'
+        # Grafana
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+          Description: 'Grafana'
+        # Loki
+        - IpProtocol: tcp
+          FromPort: 3100
+          ToPort: 3100
+          CidrIp: 0.0.0.0/0
+          Description: 'Loki'
+        # cAdvisor
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+          Description: 'cAdvisor'
+        # Prometheus
+        - IpProtocol: tcp
+          FromPort: 9090
+          ToPort: 9090
+          CidrIp: 0.0.0.0/0
+          Description: 'Prometheus'
+      Tags:
+        - Key: Name
+          Value: BellStreaming-EC2-SG
+
+Outputs:
+  SecurityGroupId:
+    Description: 'Security Group ID'
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'

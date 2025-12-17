@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Parameters for Bell Streaming Infrastructure'
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: 'EC2 Key Pair for SSH access'
+  
+  InstanceType:
+    Type: String
+    Description: 'EC2 instance type'
+    Default: 't3.2xlarge'
+    AllowedValues:
+      - t3.xlarge
+      - t3.2xlarge
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+  
+  MongoDbUri:
+    Type: String
+    Description: 'MongoDB connection URI (e.g., MongoDB Atlas)'
+    NoEcho: true
+  
+  JwtSecret:
+    Type: String
+    Description: 'JWT secret key'
+    NoEcho: true
+  
+  JwtRefreshSecret:
+    Type: String
+    Description: 'JWT refresh secret key'
+    NoEcho: true
+  
+  AwsAccessKeyId:
+    Type: String
+    Description: 'AWS Access Key ID for S3 access'
+    NoEcho: true
+  
+  AwsSecretAccessKey:
+    Type: String
+    Description: 'AWS Secret Access Key for S3 access'
+    NoEcho: true
+  
+  S3BucketName:
+    Type: String
+    Description: 'S3 bucket name for video uploads'
+  
+  FreepikApiKey:
+    Type: String
+    Description: 'API Key for Freepik service'
+    NoEcho: true
+    Default: ''
+  
+  WebhookUrl:
+    Type: String
+    Description: 'Webhook URL for thumbnail generation'
+    Default: ''
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      AMI: ami-0c02fb55c47b2db41  # Amazon Linux 2023
+    us-west-2:
+      AMI: ami-008fe2fc65df48dac
+    eu-west-1:
+      AMI: ami-0905a3c97561e0b69

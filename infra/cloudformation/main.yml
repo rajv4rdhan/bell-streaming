@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Main CloudFormation stack for Bell Streaming - Orchestrates nested stacks'
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: 'EC2 Key Pair for SSH access'
+  
+  InstanceType:
+    Type: String
+    Description: 'EC2 instance type'
+    Default: 't3.2xlarge'
+    AllowedValues:
+      - t3.xlarge
+      - t3.2xlarge
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+  
+  MongoDbUri:
+    Type: String
+    Description: 'MongoDB connection URI (e.g., MongoDB Atlas)'
+    NoEcho: true
+  
+  JwtSecret:
+    Type: String
+    Description: 'JWT secret key'
+    NoEcho: true
+  
+  JwtRefreshSecret:
+    Type: String
+    Description: 'JWT refresh secret key'
+    NoEcho: true
+  
+  AwsAccessKeyId:
+    Type: String
+    Description: 'AWS Access Key ID for S3 access'
+    NoEcho: true
+  
+  AwsSecretAccessKey:
+    Type: String
+    Description: 'AWS Secret Access Key for S3 access'
+    NoEcho: true
+  
+  S3BucketName:
+    Type: String
+    Description: 'S3 bucket name for video uploads'
+  
+  FreepikApiKey:
+    Type: String
+    Description: 'API Key for Freepik service'
+    NoEcho: true
+    Default: ''
+  
+  WebhookUrl:
+    Type: String
+    Description: 'Webhook URL for thumbnail generation'
+    Default: ''
+  
+  TemplatesBucketName:
+    Type: String
+    Description: 'S3 bucket containing nested CloudFormation templates'
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/cloudformation/network.yml'
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Network-Stack
+
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/cloudformation/security.yml'
+      Parameters:
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Security-Stack
+
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/cloudformation/iam.yml'
+      Tags:
+        - Key: Name
+          Value: BellStreaming-IAM-Stack
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+      - SecurityStack
+      - IAMStack
+    Properties:
+      TemplateURL: !Sub 'https://${TemplatesBucketName}.s3.${AWS::Region}.amazonaws.com/cloudformation/compute.yml'
+      Parameters:
+        KeyName: !Ref KeyName
+        InstanceType: !Ref InstanceType
+        MongoDbUri: !Ref MongoDbUri
+        JwtSecret: !Ref JwtSecret
+        JwtRefreshSecret: !Ref JwtRefreshSecret
+        AwsAccessKeyId: !Ref AwsAccessKeyId
+        AwsSecretAccessKey: !Ref AwsSecretAccessKey
+        S3BucketName: !Ref S3BucketName
+        FreepikApiKey: !Ref FreepikApiKey
+        WebhookUrl: !Ref WebhookUrl
+        SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        SecurityGroupId: !GetAtt SecurityStack.Outputs.SecurityGroupId
+        InstanceProfile: !GetAtt IAMStack.Outputs.InstanceProfileName
+      Tags:
+        - Key: Name
+          Value: BellStreaming-Compute-Stack
+
+Outputs:
+  InstancePublicIP:
+    Description: 'Public IP address of the EC2 instance'
+    Value: !GetAtt ComputeStack.Outputs.InstancePublicIP
+  
+  NginxURL:
+    Description: 'Nginx frontend URL'
+    Value: !GetAtt ComputeStack.Outputs.NginxURL
+  
+  GrafanaURL:
+    Description: 'Grafana monitoring dashboard URL'
+    Value: !GetAtt ComputeStack.Outputs.GrafanaURL
+  
+  PrometheusURL:
+    Description: 'Prometheus metrics URL'
+    Value: !GetAtt ComputeStack.Outputs.PrometheusURL
+  
+  cAdvisorURL:
+    Description: 'cAdvisor container monitoring URL'
+    Value: !GetAtt ComputeStack.Outputs.cAdvisorURL
+  
+  SSHCommand:
+    Description: 'SSH command to connect to the instance'
+    Value: !GetAtt ComputeStack.Outputs.SSHCommand

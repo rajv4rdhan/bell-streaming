@@ -192,152 +192,271 @@ export const UploadPage = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Upload New Video</h1>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <h2 className="text-sm font-medium text-slate-500 mb-1">Upload Manager</h2>
+        <p className="text-slate-600">Share new content with your audience</p>
+      </div>
 
       {currentStep !== 'success' && (
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getStageIndicator('metadata')}</span>
-            <span>Metadata</span>
-          </div>
-          <span>&rarr;</span>
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getStageIndicator('presigning')}</span>
-            <span>Preparing</span>
-          </div>
-          <span>&rarr;</span>
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getStageIndicator('uploading')}</span>
-            <span>Uploading</span>
-          </div>
-          <span>&rarr;</span>
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">{getStageIndicator('confirming')}</span>
-            <span>Confirming</span>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-premium p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                stageStatus.metadata === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                currentStep === 'metadata' ? 'bg-primary-100 text-primary-600' :
+                'bg-slate-100 text-slate-400'
+              }`}>
+                {stageStatus.metadata === 'complete' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="font-semibold">1</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-slate-700">Metadata</span>
+            </div>
+            <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                stageStatus.presigning === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                currentStep === 'presigning' ? 'bg-primary-100 text-primary-600' :
+                'bg-slate-100 text-slate-400'
+              }`}>
+                {stageStatus.presigning === 'complete' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="font-semibold">2</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-slate-700">Prepare</span>
+            </div>
+            <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                stageStatus.uploading === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                currentStep === 'uploading' ? 'bg-primary-100 text-primary-600' :
+                'bg-slate-100 text-slate-400'
+              }`}>
+                {stageStatus.uploading === 'complete' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="font-semibold">3</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-slate-700">Upload</span>
+            </div>
+            <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                stageStatus.confirming === 'complete' ? 'bg-emerald-100 text-emerald-600' :
+                currentStep === 'confirming' ? 'bg-primary-100 text-primary-600' :
+                'bg-slate-100 text-slate-400'
+              }`}>
+                {stageStatus.confirming === 'complete' ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <span className="font-semibold">4</span>
+                )}
+              </div>
+              <span className="text-sm font-medium text-slate-700">Confirm</span>
+            </div>
           </div>
         </div>
       )}
 
       {error && (
-        <Card className="mb-6 bg-red-100 border-red-500 text-red-700">
-          <p className="font-bold">Error</p>
-          <p>{error}</p>
-        </Card>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-semibold text-red-900">Upload Error</p>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {currentStep === 'metadata' && (
-        <Card>
-          <form onSubmit={handleCreateMetadata}>
-            <div className="space-y-4">
-              <Input
-                label="Video Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., My Awesome Video"
-                required
-              />
-              <Input
-                label="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="A short summary of the video content"
-                required
-              />
-              <Input
-                label="Tags (comma-separated)"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="e.g., tech, tutorial, javascript"
-              />
-              <Input
-                label="Thumbnail Prompt (Optional)"
-                value={thumbnailPrompt}
-                onChange={(e) => setThumbnailPrompt(e.target.value)}
-                placeholder="e.g., A futuristic cityscape at sunset"
-              />
-            </div>
-            <div className="mt-6">
-              <Button
-                type="submit"
-                loading={createMetadataMutation.isPending}
-                disabled={createMetadataMutation.isPending}
-              >
-                Next: Prepare Upload
-              </Button>
-            </div>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-premium p-8">
+          <h3 className="text-lg font-semibold text-slate-900 mb-6">Video Details</h3>
+          <form onSubmit={handleCreateMetadata} className="space-y-5">
+            <Input
+              label="Video Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g., My Awesome Video"
+              required
+            />
+            <Input
+              label="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="A short summary of the video content"
+              required
+            />
+            <Input
+              label="Tags (comma-separated)"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="e.g., tech, tutorial, javascript"
+            />
+            <Input
+              label="Thumbnail Prompt (Optional)"
+              value={thumbnailPrompt}
+              onChange={(e) => setThumbnailPrompt(e.target.value)}
+              placeholder="e.g., A futuristic cityscape at sunset"
+            />
+            <Button
+              type="submit"
+              className="w-full !bg-slate-900 hover:!bg-slate-800 !py-3 !rounded-xl !font-medium"
+              loading={createMetadataMutation.isPending}
+              disabled={createMetadataMutation.isPending}
+            >
+              Continue to Upload
+            </Button>
           </form>
-        </Card>
+        </div>
       )}
 
       {currentStep === 'presigning' && (
-        <Card className="text-center">
-          <p className="text-lg font-semibold">⏳ Preparing secure upload...</p>
-        </Card>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-premium p-12 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-100 mb-4">
+            <svg className="w-8 h-8 text-primary-600 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <p className="text-lg font-semibold text-slate-900">Preparing secure upload...</p>
+          <p className="text-sm text-slate-500 mt-2">Please wait while we set up your upload</p>
+        </div>
       )}
 
       {currentStep === 'file' && (
-        <Card>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-premium p-8">
+          <h3 className="text-lg font-semibold text-slate-900 mb-6">Select Video File</h3>
           <div
             {...getRootProps()}
-            className={`p-10 border-2 border-dashed rounded-lg text-center cursor-pointer
-              ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+            className={`p-12 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all ${
+              isDragActive 
+                ? 'border-primary-500 bg-primary-50' 
+                : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'
+            }`}
           >
             <input {...getInputProps()} />
             {file ? (
-              <p className="font-semibold">{file.name}</p>
-            ) : isDragActive ? (
-              <p>Drop the video file here ...</p>
+              <div className="flex items-center justify-center gap-3">
+                <svg className="w-12 h-12 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-900">{file.name}</p>
+                  <p className="text-sm text-slate-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                </div>
+              </div>
             ) : (
-              <p>Drag 'n' drop a video file here, or click to select file</p>
+              <div>
+                <svg className="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                <p className="text-lg font-medium text-slate-900 mb-2">
+                  {isDragActive ? 'Drop your video here' : 'Drag & drop your video'}
+                </p>
+                <p className="text-sm text-slate-500">or click to browse (MP4, WebM, MOV - Max 1GB)</p>
+              </div>
             )}
           </div>
           {file && (
-            <div className="mt-6">
-              <Button onClick={handleUpload} loading={uploadFileMutation.isPending} disabled={uploadFileMutation.isPending}>
-                Upload Video
-              </Button>
-            </div>
+            <Button 
+              onClick={handleUpload} 
+              className="w-full mt-6 !bg-slate-900 hover:!bg-slate-800 !py-3 !rounded-xl !font-medium"
+              loading={uploadFileMutation.isPending} 
+              disabled={uploadFileMutation.isPending}
+            >
+              Start Upload
+            </Button>
           )}
-        </Card>
+        </div>
       )}
 
       {(currentStep === 'uploading' || currentStep === 'confirming') && (
-        <Card>
-          <div className="text-center">
-            <p className="text-lg font-semibold mb-2">
-              {currentStep === 'uploading' && 'Uploading video...'}
-              {currentStep === 'confirming' && 'Finalizing upload...'}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-premium p-8">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-100 mb-4">
+              <svg className="w-8 h-8 text-primary-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <p className="text-lg font-semibold text-slate-900 mb-2">
+              {currentStep === 'uploading' ? 'Uploading your video...' : 'Finalizing upload...'}
             </p>
-            {currentStep === 'uploading' && (
-              <div className="w-full bg-gray-200 rounded-full h-4">
+            <p className="text-sm text-slate-500">{file?.name}</p>
+          </div>
+          {currentStep === 'uploading' && (
+            <div>
+              <div className="flex items-center justify-between text-sm text-slate-600 mb-2">
+                <span>Progress</span>
+                <span className="font-semibold">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
                 <div
-                  className="bg-blue-500 h-4 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
-            )}
-            <p className="mt-2 text-gray-600">{file?.name}</p>
-          </div>
-        </Card>
+            </div>
+          )}
+        </div>
       )}
 
       {currentStep === 'success' && (
-        <Card className="text-center bg-green-50">
-          <h2 className="text-2xl font-bold text-green-700 mb-2">Upload Successful!</h2>
-          <p>Your video has been uploaded and is now processing.</p>
-          <div className="mt-4">
-            <Button onClick={resetState}>Upload Another Video</Button>
+        <div className="bg-white rounded-2xl border border-emerald-200 shadow-premium p-12 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-emerald-100 mb-4">
+            <svg className="w-10 h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
-        </Card>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Upload Successful!</h2>
+          <p className="text-slate-600 mb-6">Your video has been uploaded and is now processing.</p>
+          <Button 
+            onClick={resetState}
+            className="!bg-slate-900 hover:!bg-slate-800 !py-3 !px-8 !rounded-xl !font-medium"
+          >
+            Upload Another Video
+          </Button>
+        </div>
       )}
 
       {currentStep === 'error' && (
-         <Card className="text-center">
-           <h2 className="text-2xl font-bold text-red-700 mb-2">Upload Failed</h2>
-           <p className="mb-4">{error}</p>
-           <Button onClick={resetState}>Try Again</Button>
-         </Card>
+        <div className="bg-white rounded-2xl border border-red-200 shadow-premium p-12 text-center">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-red-100 mb-4">
+            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Upload Failed</h2>
+          <p className="text-slate-600 mb-6">{error}</p>
+          <Button 
+            onClick={resetState}
+            className="!bg-slate-900 hover:!bg-slate-800 !py-3 !px-8 !rounded-xl !font-medium"
+          >
+            Try Again
+          </Button>
+        </div>
       )}
     </div>
   );
