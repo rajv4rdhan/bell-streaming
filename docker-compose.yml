@@ -22,8 +22,15 @@ services:
       - 8.8.4.4
     environment:
       - PORT=3001
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
       logging: "promtail"
 
@@ -36,8 +43,12 @@ services:
       - 8.8.4.4
     environment:
       - PORT=3002
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
       logging: "promtail"
 
@@ -50,11 +61,19 @@ services:
       - 8.8.4.4
     environment:
       - PORT=3004
+      - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
       - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_PRESIGNED_URL_EXPIRATION=${S3_PRESIGNED_URL_EXPIRATION}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-500}
+      - ALLOWED_VIDEO_TYPES=${ALLOWED_VIDEO_TYPES}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
       logging: "promtail"
 
@@ -64,7 +83,12 @@ services:
       dockerfile: packages/streaming-service/Dockerfile
     environment:
       - PORT=3003
+      - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
     labels:
       logging: "promtail"
 

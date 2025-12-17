@@ -27,7 +27,6 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/auth-service/package.json ./packages/auth-service/package.json
 COPY --from=builder /usr/src/app/packages/auth-service/dist ./packages/auth-service/dist
-COPY --from=builder /usr/src/app/packages/auth-service/.env ./packages/auth-service/.env
 
 # Set the command to run the service
 CMD ["node", "packages/auth-service/dist/index.js"]

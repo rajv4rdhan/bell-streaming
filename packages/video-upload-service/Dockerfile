@@ -27,7 +27,6 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/video-upload-service/package.json ./packages/video-upload-service/package.json
 COPY --from=builder /usr/src/app/packages/video-upload-service/dist ./packages/video-upload-service/dist
-COPY --from=builder /usr/src/app/packages/video-upload-service/.env ./packages/video-upload-service/.env
 
 # Set the command to run the service
 CMD ["node", "packages/video-upload-service/dist/index.js"]

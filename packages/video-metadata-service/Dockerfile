@@ -27,7 +27,6 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/video-metadata-service/package.json ./packages/video-metadata-service/package.json
 COPY --from=builder /usr/src/app/packages/video-metadata-service/dist ./packages/video-metadata-service/dist
-COPY --from=builder /usr/src/app/packages/video-metadata-service/.env ./packages/video-metadata-service/.env
 
 # Set the command to run the service
 CMD ["node", "packages/video-metadata-service/dist/index.js"]

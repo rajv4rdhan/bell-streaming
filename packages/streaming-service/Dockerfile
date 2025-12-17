@@ -27,7 +27,6 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/node_modules ./node_modules
 COPY --from=builder /usr/src/app/packages/streaming-service/package.json ./packages/streaming-service/package.json
 COPY --from=builder /usr/src/app/packages/streaming-service/dist ./packages/streaming-service/dist
-COPY --from=builder /usr/src/app/packages/streaming-service/.env ./packages/streaming-service/.env
 
 # Set the command to run the service
 CMD ["node", "packages/streaming-service/dist/index.js"]
