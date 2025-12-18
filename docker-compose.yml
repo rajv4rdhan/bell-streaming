@@ -203,7 +203,6 @@ services:
     command:
       - '--docker_only=true'
       - '--housekeeping_interval=10s'
-      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
     restart: unless-stopped
     labels:
       logging: "promtail"

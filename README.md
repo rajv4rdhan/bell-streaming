@@ -12,3 +12,9 @@ Get-Content .env |
   ```
 
   export env
+
+
+
+  {job="docker"} - all container logs
+{service="auth-service"} - specific service logs
+{container="nginx"} - specific container logs

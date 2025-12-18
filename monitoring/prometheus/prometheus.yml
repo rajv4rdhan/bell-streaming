@@ -16,10 +16,24 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
     metric_relabel_configs:
+      # Keep only essential metrics: memory, storage, network
+      - source_labels: [__name__]
+        regex: 'container_(memory_usage_bytes|memory_working_set_bytes|spec_memory_limit_bytes|fs_usage_bytes|fs_limit_bytes|fs_reads_bytes_total|fs_writes_bytes_total|network_receive_bytes_total|network_transmit_bytes_total|network_receive_errors_total|network_transmit_errors_total|last_seen)'
+        action: keep
+      # Map compose service label to 'service'
       - source_labels: [container_label_com_docker_compose_service]
         target_label: service
+      # Map compose project label to 'project'
       - source_labels: [container_label_com_docker_compose_project]
         target_label: project
+      # Clean up container name (remove leading slash)
+      - source_labels: [name]
+        target_label: container_name
+        regex: '/(.+)'
+        replacement: '$1'
+      # Keep container ID as is
+      - source_labels: [id]
+        target_label: container_id
 
   # Add your microservices here when they expose /metrics endpoint
   # - job_name: 'auth-service'

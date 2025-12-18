@@ -14,16 +14,23 @@ scrape_configs:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
+        filters:
+          - name: label
+            values: ["logging=promtail"]
     relabel_configs:
-      - source_labels: ['__meta_docker_container_label_logging']
-        regex: 'promtail'
-        action: keep
+      # Extract container name and remove leading slash
       - source_labels: ['__meta_docker_container_name']
         regex: '/(.*)'
         target_label: 'container'
+      # Extract log stream type (stdout/stderr)
       - source_labels: ['__meta_docker_container_log_stream']
         target_label: 'stream'
+      # Extract compose service name
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
         target_label: 'service'
+      # Extract compose project name
       - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
         target_label: 'project'
+      # Always set job label
+      - replacement: 'docker'
+        target_label: 'job'
