@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "cd ../../ && npm install --workspaces --include-workspace-root && npm run build --workspaces",
+    "prebuild": "cd ../../packages/shared-ui && npm install && npm run build",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
