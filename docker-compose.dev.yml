@@ -41,8 +41,6 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
-    labels:
-      logging: "promtail"
 
   video-metadata-service:
     build:
@@ -60,12 +58,6 @@ services:
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
       - PUBLIC_URL=${PUBLIC_URL}
-      - AWS_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    labels:
-      logging: "promtail"
 
   video-upload-service:
     build:
@@ -89,8 +81,6 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
-    labels:
-      logging: "promtail"
 
   streaming-service:
     build:
@@ -104,8 +94,6 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    labels:
-      logging: "promtail"
 
   thumbnail-generator:
     build:
@@ -117,101 +105,6 @@ services:
     environment:
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
-    labels:
-      logging: "promtail"
-
-  # Monitoring Stack
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus:/etc/prometheus
-      - prometheus-data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
-    labels:
-      logging: "promtail"
-
-  loki:
-    image: grafana/loki:2.9.3
-    container_name: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./monitoring/loki:/etc/loki
-      - loki-data:/loki
-    command: -config.file=/etc/loki/loki-config.yml
-    restart: unless-stopped
-    labels:
-      logging: "promtail"
-
-  promtail:
-    image: grafana/promtail:2.9.3
-    container_name: promtail
-    volumes:
-      - ./monitoring/promtail:/etc/promtail
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/promtail-config.yml
-    restart: unless-stopped
-    depends_on:
-      - loki
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    restart: unless-stopped
-    depends_on:
-      - prometheus
-      - loki
-    labels:
-      logging: "promtail"
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
-    container_name: cadvisor
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    command:
-      - '--docker_only=true'
-      - '--housekeeping_interval=10s'
-      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
-    restart: unless-stopped
-    labels:
-      logging: "promtail"
-
-volumes:
-  prometheus-data:
-  loki-data:
-  grafana-data:
 
 networks:
   default:

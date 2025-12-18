@@ -80,11 +80,9 @@ Resources:
           # Configure Doppler
           export DOPPLER_TOKEN="${DopplerToken}"
           
-          # Export Doppler secrets to .env file
-          cd /opt/bell-streaming
+          cd bell-streaming
           doppler secrets download --no-file --format env > .env
           
-          # Build and start services with docker-compose
           docker-compose up --build -d
           
           

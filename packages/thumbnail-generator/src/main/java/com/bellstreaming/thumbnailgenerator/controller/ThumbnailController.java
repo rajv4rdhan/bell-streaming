@@ -21,7 +21,11 @@ public class ThumbnailController {
 
     @PostMapping("/generate")
     public Mono<ResponseEntity<String>> generateThumbnail(@RequestBody ThumbnailRequest request) {
-        return freepikService.generateImage(request.getPrompt())
+        return freepikService.generateImage(
+                request.getVideoId(),
+                request.getPrompt(),
+                request.getWebhookUrl()
+        )
                 .map(response -> ResponseEntity.ok().body(response));
     }
 }

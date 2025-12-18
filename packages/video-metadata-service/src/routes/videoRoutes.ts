@@ -10,6 +10,7 @@ import {
   getStats,
   getPublicVideos,
   getPublicVideoById,
+  handleThumbnailWebhook,
 } from '../controllers';
 import { authenticate, authorize, UserRole } from '../middleware/auth';
 import { validate } from '../middleware/validation';
@@ -28,6 +29,9 @@ const router = Router();
 // Public, unauthenticated routes
 router.get('/public', getPublicVideos);
 router.get('/:videoId/public', validate(getVideoSchema), getPublicVideoById);
+
+// Public webhook for thumbnail generator
+router.post('/webhook/:videoId', handleThumbnailWebhook);
 
 // Admin-only access for all endpoints in this service
 router.use(authenticate, authorize(UserRole.ADMIN));

@@ -85,7 +85,9 @@ export const VideosPage = () => {
               <div className="relative">
                 {video.thumbnailUrl ? (
                   <img
-                    src={video.thumbnailUrl}
+                    src={video.thumbnailUrl.startsWith(import.meta.env.VITE_CLOUDFRONT_URL)
+                      ? video.thumbnailUrl
+                      : `${import.meta.env.VITE_CLOUDFRONT_URL}/${video.thumbnailUrl.replace(/^\//, '')}`}
                     alt={video.title}
                     className="w-full h-48 object-cover"
                   />

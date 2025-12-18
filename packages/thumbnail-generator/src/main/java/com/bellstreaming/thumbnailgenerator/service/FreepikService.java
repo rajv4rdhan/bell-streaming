@@ -19,15 +19,12 @@ public class FreepikService {
 
     @Value("${freepik.api.url}")
     private String apiUrl;
-    
-    @Value("${webhook.url}")
-    private String webhookUrl;
 
     public FreepikService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.baseUrl(apiUrl).build();
     }
 
-    public Mono<String> generateImage(String prompt) {
+    public Mono<String> generateImage(String videoId, String prompt, String webhookUrl) {
         Map<String, Object> body = Map.of(
                 "prompt", prompt,
                 "prompt_upsampling", false,
