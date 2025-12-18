@@ -11,7 +11,7 @@ export class ThumbnailGeneratorService {
     try {
       console.log(`Requesting thumbnail generation for video ${videoId} with prompt: ${prompt}`);
       
-      await axios.post(`${this.baseUrl}/api/thumbnail`, {
+      await axios.post(`${this.baseUrl}/api/thumbnail/generate`, {
         videoId,
         prompt,
         webhookUrl,
