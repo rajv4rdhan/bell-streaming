@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import videoRoutes from './routes/videoRoutes';
 import { rateLimiter } from './middleware/rateLimiter';
+import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 
 const app: Express = express();
 const port = process.env.PORT || 3003;
@@ -17,6 +18,12 @@ app.use(cors({
 app.use(helmet());
 app.use(express.json());
 app.use(rateLimiter);
+
+// Metrics middleware
+app.use(metricsMiddleware);
+
+// Metrics endpoint
+app.get('/metrics', metricsHandler);
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Streaming Service is running!');

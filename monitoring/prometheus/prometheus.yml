@@ -36,22 +36,27 @@ scrape_configs:
         target_label: container_id
 
   # Add your microservices here when they expose /metrics endpoint
-  # - job_name: 'auth-service'
-  #   static_configs:
-  #     - targets: ['auth-service:3001']
-  #   metrics_path: '/metrics'
+  - job_name: 'auth-service'
+    static_configs:
+      - targets: ['auth-service:3001']
+    metrics_path: '/metrics'
   
-  # - job_name: 'video-upload-service'
-  #   static_configs:
-  #     - targets: ['video-upload-service:3004']
-  #   metrics_path: '/metrics'
+  - job_name: 'video-upload-service'
+    static_configs:
+      - targets: ['video-upload-service:3004']
+    metrics_path: '/metrics'
   
-  # - job_name: 'video-metadata-service'
-  #   static_configs:
-  #     - targets: ['video-metadata-service:3002']
-  #   metrics_path: '/metrics'
+  - job_name: 'video-metadata-service'
+    static_configs:
+      - targets: ['video-metadata-service:3002']
+    metrics_path: '/metrics'
   
-  # - job_name: 'streaming-service'
-  #   static_configs:
-  #     - targets: ['streaming-service:3003']
-  #   metrics_path: '/metrics'
+  - job_name: 'streaming-service'
+    static_configs:
+      - targets: ['streaming-service:3003']
+    metrics_path: '/metrics'
+  
+  - job_name: 'thumbnail-generator'
+    static_configs:
+      - targets: ['thumbnail-generator:8080']
+    metrics_path: '/actuator/prometheus'

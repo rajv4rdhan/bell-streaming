@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 
 export const createApp = (): Application => {
   const app = express();
@@ -19,6 +20,12 @@ export const createApp = (): Application => {
   );
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Metrics middleware
+  app.use(metricsMiddleware);
+
+  // Metrics endpoint
+  app.get('/metrics', metricsHandler);
 
   app.use('/api/admin', routes);
 

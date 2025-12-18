@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import { config } from './config';
 import routes from './routes';
 import { errorHandler } from './middleware';
+import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 
 export const createApp = (): Application => {
   const app = express();
@@ -25,6 +26,12 @@ export const createApp = (): Application => {
   // Body parsing middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Metrics middleware
+  app.use(metricsMiddleware);
+
+  // Metrics endpoint
+  app.get('/metrics', metricsHandler);
 
   // Routes
   app.use('/api', routes);

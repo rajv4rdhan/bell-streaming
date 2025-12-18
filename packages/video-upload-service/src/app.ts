@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import routes from './routes';
 import { errorHandler } from './middleware/errorHandler';
+import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 
 export const createApp = (): Application => {
   const app = express();
@@ -28,6 +29,12 @@ export const createApp = (): Application => {
   // Body parsing with size limit
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+  // Metrics middleware
+  app.use(metricsMiddleware);
+
+  // Metrics endpoint
+  app.get('/metrics', metricsHandler);
 
   // Rate limiting - stricter for upload endpoints
   const limiter = rateLimit({
