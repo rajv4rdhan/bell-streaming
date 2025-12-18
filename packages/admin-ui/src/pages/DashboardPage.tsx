@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Card, Spinner, videoMetadataApi } from '@bell-streaming/shared-ui';
+import { Spinner, videoMetadataApi } from '@bell-streaming/shared-ui';
 
 export const DashboardPage = () => {
   const { data: videos, isLoading: videosLoading } = useQuery({

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Spinner, Button, Modal, authApi } from '@bell-streaming/shared-ui';
+import { Spinner, Button, Modal, authApi } from '@bell-streaming/shared-ui';
 import type { User } from '@bell-streaming/shared-ui';
 
 export const UsersPage = () => {

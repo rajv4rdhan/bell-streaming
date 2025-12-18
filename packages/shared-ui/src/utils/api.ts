@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
 import type {
   AuthResponse,
   LoginRequest,
@@ -8,7 +8,6 @@ import type {
   CreateVideoRequest,
   CreateVideoResponse,
   UpdateVideoRequest,
-  PresignedUrlRequest,
   PresignedUrlResponse,
   ConfirmUploadRequest,
   ReportFailedUploadRequest,

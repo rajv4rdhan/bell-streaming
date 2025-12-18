@@ -1,6 +1,6 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Button, Input, Modal, Spinner, videoMetadataApi, formatRelativeTime, PremiumVideoPlayer } from '@bell-streaming/shared-ui';
+import { Button, Input, Modal, Spinner, videoMetadataApi, formatRelativeTime, PremiumVideoPlayer } from '@bell-streaming/shared-ui';
 import type { Video } from '@bell-streaming/shared-ui';
 
 export const VideosPage = () => {
@@ -56,140 +56,148 @@ export const VideosPage = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-medium text-slate-500 mb-1">Media Library</h2>
-          <p className="text-slate-600">{videos?.total || 0} videos total</p>
+    <div className="min-h-screen bg-zinc-50/40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Videos</h1>
+            <p className="text-sm text-zinc-500 mt-1">{videos?.total || 0} videos in library</p>
+          </div>
+          <div className="w-80">
+            <Input
+              type="search"
+              placeholder="Search videos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-zinc-200 bg-white focus:border-zinc-400 focus:ring-zinc-400"
+            />
+          </div>
         </div>
-        <Input
-          type="search"
-          placeholder="Search videos..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-80"
-        />
-      </div>
 
-      {isLoading ? (
-        <div className="flex items-center justify-center h-96">
-          <Spinner size="lg" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {videos?.videos?.map((video: Video) => (
-            <div 
-              key={video._id} 
-              className="bg-white rounded-2xl border border-slate-200 shadow-premium hover:shadow-premium-lg transition-all duration-300 overflow-hidden group"
-            >
-              <div className="relative">
-                {video.thumbnailUrl ? (
-                  <img
-                    src={video.thumbnailUrl.startsWith(import.meta.env.VITE_CLOUDFRONT_URL)
-                      ? video.thumbnailUrl
-                      : `${import.meta.env.VITE_CLOUDFRONT_URL}/${video.thumbnailUrl.replace(/^\//, '')}`}
-                    alt={video.title}
-                    className="w-full h-48 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
-                    <svg className="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                )}
-                <div className="absolute top-3 right-3 flex gap-2">
-                  <span
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg backdrop-blur-sm ${
-                      video.uploadStatus === 'completed'
-                        ? 'bg-emerald-500/90 text-white'
-                        : video.uploadStatus === 'uploading'
-                        ? 'bg-amber-500/90 text-white'
-                        : video.uploadStatus === 'failed'
-                        ? 'bg-red-500/90 text-white'
-                        : 'bg-slate-500/90 text-white'
-                    }`}
-                  >
-                    {video.uploadStatus}
-                  </span>
-                  <span
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg backdrop-blur-sm ${
-                      video.visibility === 'public'
-                        ? 'bg-primary-500/90 text-white'
-                        : 'bg-slate-700/90 text-white'
-                    }`}
-                  >
-                    {video.visibility}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-5">
-                <h3 className="font-semibold text-slate-900 mb-2 line-clamp-2 group-hover:text-primary-600 transition-colors">
-                  {video.title}
-                </h3>
-                <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                  {video.description}
-                </p>
-
-                {video.tags && video.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {video.tags.slice(0, 3).map((tag, index) => (
-                      <span key={index} className="px-2 py-1 text-xs bg-slate-100 text-slate-600 rounded-md font-medium">
-                        {tag}
-                      </span>
-                    ))}
-                    {video.tags.length > 3 && (
-                      <span className="px-2 py-1 text-xs bg-slate-100 text-slate-600 rounded-md font-medium">
-                        +{video.tags.length - 3}
-                      </span>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-96">
+            <Spinner size="lg" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {videos?.videos?.map((video: Video) => (
+              <div
+                key={video._id}
+                className="group bg-white border border-zinc-200 rounded-lg hover:border-zinc-300 transition-all duration-200 overflow-hidden hover:shadow-sm"
+              >
+                <div className="flex gap-4 p-4">
+                  <div className="flex-shrink-0 w-48 h-28 relative bg-zinc-100 rounded-md overflow-hidden">
+                    {video.thumbnailUrl ? (
+                      <img
+                        src={video.thumbnailUrl.startsWith(import.meta.env.VITE_CLOUDFRONT_URL)
+                          ? video.thumbnailUrl
+                          : `${import.meta.env.VITE_CLOUDFRONT_URL}/${video.thumbnailUrl.replace(/^\//, '')}`}
+                        alt={video.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-100 flex items-center justify-center">
+                        <svg className="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </div>
                     )}
                   </div>
-                )}
+                  
+                  <div className="flex-1 min-w-0 space-y-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-zinc-900 truncate group-hover:text-zinc-700 transition-colors">
+                          {video.title}
+                        </h3>
+                        <p className="text-sm text-zinc-500 line-clamp-1 mt-1">{video.description}</p>
+                      </div>
+                      <time className="text-xs text-zinc-400 whitespace-nowrap">{formatRelativeTime(video.createdAt || '')}</time>
+                    </div>
 
-                <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
-                  <div className="flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    <span>{video.views || 0}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
+                        video.uploadStatus === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : video.uploadStatus === 'uploading'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : video.uploadStatus === 'failed'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-zinc-50 text-zinc-700 border-zinc-200'
+                      }`}>
+                        {video.uploadStatus}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
+                        video.thumbnailStatus === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : video.thumbnailStatus === 'in_progress'
+                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : video.thumbnailStatus === 'failed'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-zinc-50 text-zinc-700 border-zinc-200'
+                      }`}>
+                        Thumbnail
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
+                        video.visibility === 'public'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200'
+                          : 'bg-zinc-50 text-zinc-700 border-zinc-200'
+                      }`}>
+                        {video.visibility}
+                      </span>
+                      {video.tags && video.tags.slice(0, 2).map((tag, index) => (
+                        <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-zinc-100 text-zinc-600 border border-zinc-200">
+                          {tag}
+                        </span>
+                      ))}
+                      {video.tags && video.tags.length > 2 && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-zinc-100 text-zinc-600 border border-zinc-200">
+                          +{video.tags.length - 2}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-xs text-zinc-500">
+                        <div className="flex items-center gap-1.5">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>{video.views || 0}</span>
+                        </div>
+                        <span className="font-mono text-zinc-400 truncate max-w-[200px]">{video.s3Key?.slice(-24) || '-'}</span>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleVisibility(video)}
+                          disabled={toggleVisibilityMutation.isPending}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {video.visibility === 'public' ? 'Make Private' : 'Make Public'}
+                        </button>
+                        <button
+                          onClick={() => setSelectedVideo(video)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 transition-colors"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(video)}
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <span>{formatRelativeTime(video.createdAt || '')}</span>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleToggleVisibility(video)}
-                    className="flex-1 !text-xs !py-2"
-                    disabled={toggleVisibilityMutation.isPending}
-                  >
-                    {video.visibility === 'public' ? 'Make Private' : 'Make Public'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setSelectedVideo(video)}
-                    className="!text-xs !py-2"
-                  >
-                    View
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleDeleteClick(video)}
-                    className="!text-xs !py-2"
-                  >
-                    Delete
-                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
       {selectedVideo && !showDeleteModal && (
         <Modal
@@ -205,28 +213,28 @@ export const VideosPage = () => {
                 poster={selectedVideo.thumbnailUrl}
               />
             ) : (
-              <div className="aspect-video bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500">
+              <div className="aspect-video bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-500">
                 <div className="text-center">
-                  <svg className="w-16 h-16 mx-auto mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-16 h-16 mx-auto mb-2 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <p>Video not available</p>
+                  <p className="text-sm">Video not available</p>
                 </div>
               </div>
             )}
             
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-2">Description</h3>
-                <p className="text-slate-600">{selectedVideo.description || 'No description provided'}</p>
+                <h3 className="text-sm font-semibold text-zinc-700 mb-2">Description</h3>
+                <p className="text-zinc-600 text-sm">{selectedVideo.description || 'No description provided'}</p>
               </div>
 
               {selectedVideo.tags && selectedVideo.tags.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Tags</h3>
+                  <h3 className="text-sm font-semibold text-zinc-700 mb-2">Tags</h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedVideo.tags.map((tag, index) => (
-                      <span key={index} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-lg text-sm">
+                      <span key={index} className="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md text-xs border border-zinc-200">
                         {tag}
                       </span>
                     ))}
@@ -234,22 +242,26 @@ export const VideosPage = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-50 rounded-lg border border-zinc-200">
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Views</p>
-                  <p className="font-semibold text-slate-900">{selectedVideo.views || 0}</p>
+                  <p className="text-xs text-zinc-500 mb-1">Views</p>
+                  <p className="font-medium text-zinc-900">{selectedVideo.views || 0}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Status</p>
-                  <p className="font-semibold text-slate-900 capitalize">{selectedVideo.uploadStatus}</p>
+                  <p className="text-xs text-zinc-500 mb-1">Upload Status</p>
+                  <p className="font-medium text-zinc-900 capitalize">{selectedVideo.uploadStatus}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Visibility</p>
-                  <p className="font-semibold text-slate-900 capitalize">{selectedVideo.visibility}</p>
+                  <p className="text-xs text-zinc-500 mb-1">Thumbnail Status</p>
+                  <p className="font-medium text-zinc-900 capitalize">{selectedVideo.thumbnailStatus?.replace('_', ' ')}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-slate-500 mb-1">Created</p>
-                  <p className="font-semibold text-slate-900">{formatRelativeTime(selectedVideo.createdAt || '')}</p>
+                  <p className="text-xs text-zinc-500 mb-1">Visibility</p>
+                  <p className="font-medium text-zinc-900 capitalize">{selectedVideo.visibility}</p>
+                </div>
+                <div className="col-span-2">
+                  <p className="text-xs text-zinc-500 mb-1">Created</p>
+                  <p className="font-medium text-zinc-900">{formatRelativeTime(selectedVideo.createdAt || '')}</p>
                 </div>
               </div>
             </div>
@@ -257,7 +269,6 @@ export const VideosPage = () => {
         </Modal>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedVideo && (
         <Modal
           isOpen={showDeleteModal}
@@ -268,8 +279,8 @@ export const VideosPage = () => {
           title="Delete Video"
         >
           <div className="space-y-4">
-            <p className="text-gray-700">
-              Are you sure you want to delete <strong>{selectedVideo.title}</strong>?
+            <p className="text-zinc-700 text-sm">
+              Are you sure you want to delete <strong className="font-semibold">{selectedVideo.title}</strong>?
               This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
@@ -279,6 +290,7 @@ export const VideosPage = () => {
                   setShowDeleteModal(false);
                   setSelectedVideo(null);
                 }}
+                className="border-zinc-300 text-zinc-700 hover:bg-zinc-50"
               >
                 Cancel
               </Button>

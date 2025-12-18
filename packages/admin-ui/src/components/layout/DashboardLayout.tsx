@@ -115,16 +115,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
               <h2 className="text-2xl font-semibold text-slate-900">
                 {navItems.find((item) => item.path === location.pathname)?.label || 'Dashboard'}
               </h2>
-              <p className="text-sm text-slate-500 mt-0.5">Welcome back, {user?.name?.split(' ')[0] || 'Admin'}</p>
+              <p className="text-sm text-slate-500 mt-0.5">Welcome back, {user?.firstName || 'Admin'}</p>
             </div>
             
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-3 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-semibold">
-                  {user?.name?.charAt(0).toUpperCase() || 'A'}
+                  {user?.firstName?.charAt(0).toUpperCase() || 'A'}
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-medium text-slate-900">{user?.name}</p>
+                  <p className="text-sm font-medium text-slate-900">{user?.firstName} {user?.lastName}</p>
                   <p className="text-xs text-slate-500">{user?.email}</p>
                 </div>
               </div>

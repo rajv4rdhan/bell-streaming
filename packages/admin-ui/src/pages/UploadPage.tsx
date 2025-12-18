@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, Button, Input, videoMetadataApi, videoUploadApi } from '@bell-streaming/shared-ui';
+import { Button, Input, videoMetadataApi, videoUploadApi } from '@bell-streaming/shared-ui';
 
 type UploadStep = 'metadata' | 'presigning' | 'file' | 'uploading' | 'confirming' | 'success' | 'error';
 
@@ -28,7 +28,6 @@ export const UploadPage = () => {
   const [error, setError] = useState('');
   const [videoId, setVideoId] = useState('');
   const [s3Key, setS3Key] = useState('');
-  const [presignedUrl, setPresignedUrl] = useState('');
   
   // Stage tracking
   const [stageStatus, setStageStatus] = useState<StageStatus>({
@@ -49,7 +48,6 @@ export const UploadPage = () => {
     setError('');
     setVideoId('');
     setS3Key('');
-    setPresignedUrl('');
     setStageStatus({
       metadata: 'pending',
       presigning: 'pending',
@@ -87,7 +85,6 @@ export const UploadPage = () => {
       videoUploadApi.getPresignedUrl({ videoId, contentType }),
     onSuccess: (response) => {
       const { presignedUrl: url, s3Key: key } = response.data;
-      setPresignedUrl(url);
       setS3Key(key);
       setStageStatus(prev => ({ ...prev, presigning: 'complete' }));
       // Automatically start the upload after getting the presigned URL
@@ -174,21 +171,6 @@ export const UploadPage = () => {
     setCurrentStep('presigning');
     setStageStatus(prev => ({ ...prev, presigning: 'pending' }));
     getPresignedUrlMutation.mutate({ videoId, contentType: file.type });
-  };
-
-  const isProcessing = createMetadataMutation.isPending || getPresignedUrlMutation.isPending || uploadFileMutation.isPending;
-
-  const getStageIndicator = (stage: keyof StageStatus) => {
-    const isCurrent = 
-      (stage === 'metadata' && currentStep === 'metadata') ||
-      (stage === 'presigning' && currentStep === 'presigning') ||
-      (stage === 'uploading' && currentStep === 'uploading') ||
-      (stage === 'confirming' && currentStep === 'confirming');
-
-    if (stageStatus[stage] === 'complete') return '✅';
-    if (stageStatus[stage] === 'error') return '❌';
-    if (isProcessing && isCurrent) return '⏳';
-    return '⚪';
   };
 
   return (

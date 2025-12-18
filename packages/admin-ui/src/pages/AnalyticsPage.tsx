@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Card, Spinner } from '@bell-streaming/shared-ui';
+import { Spinner } from '@bell-streaming/shared-ui';
 import { apiClient } from '@bell-streaming/shared-ui';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
