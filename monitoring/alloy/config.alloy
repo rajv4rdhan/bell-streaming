@@ -98,7 +98,7 @@ prometheus.remote_write "default" {
 // LOKI LOGS
 // ====================
 
-// Discover Docker containers
+// 1. Discover Docker containers
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
   
@@ -108,42 +108,47 @@ discovery.docker "containers" {
   }
 }
 
-// Read container logs
-loki.source.docker "containers" {
-  host             = "unix:///var/run/docker.sock"
-  targets          = discovery.docker.containers.targets
-  forward_to       = [loki.write.default.receiver]
-  refresh_interval = "5s"
-  relabel_rules    = discovery.relabel.docker_labels.rules
-}
-
-// Relabel rules to add service/container labels
-discovery.relabel "docker_labels" {
+// 2. Relabel targets BEFORE scraping
+// This converts the temporary __meta labels into permanent labels
+discovery.relabel "container_logs" {
   targets = discovery.docker.containers.targets
-  
+
+  // Extract container name (removes the leading slash)
   rule {
     source_labels = ["__meta_docker_container_name"]
     regex         = "/(.*)"
     target_label  = "container"
   }
-  
+
+  // Extract Docker Compose service name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
-  
+
+  // Extract Docker Compose project name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
     target_label  = "project"
   }
-  
+
+  // Assign a static job label
   rule {
-    replacement = "docker"
     target_label = "job"
+    replacement  = "docker"
   }
 }
 
-// Send logs to Loki
+// 3. Read container logs using the RELABELED targets
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  // NOTICE: We now use the output of the relabel component, not the raw discovery
+  targets          = discovery.relabel.container_logs.output
+  forward_to       = [loki.write.default.receiver]
+  refresh_interval = "5s"
+}
+
+// 4. Send logs to Loki
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"

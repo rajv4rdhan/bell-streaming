@@ -1,9 +1,12 @@
 
 services:
   nginx:
+    container_name: nginx
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    environment:
+      - TZ=UTC
     ports:
       - "8081:80"
     depends_on:
@@ -13,10 +16,11 @@ services:
       - streaming-service
       - thumbnail-generator
   cloudflared:
-    image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    image: cloudflare/cloudflared:latest
     command: tunnel run
     environment:
+      - TZ=UTC
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - nginx
@@ -24,8 +28,9 @@ services:
     networks:
       - default
     labels:
-      logging: "promtail"
+      logging: "alloy"
   auth-service:
+    container_name: auth-service
     build:
       context: .
       dockerfile: packages/auth-service/Dockerfile
@@ -33,6 +38,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3001
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
@@ -47,6 +53,7 @@ services:
       logging: "alloy"
 
   video-metadata-service:
+    container_name: video-metadata-service
     build:
       context: .
       dockerfile: packages/video-metadata-service/Dockerfile
@@ -54,6 +61,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3002
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
@@ -70,6 +78,7 @@ services:
       logging: "alloy"
 
   video-upload-service:
+    container_name: video-upload-service
     build:
       context: .
       dockerfile: packages/video-upload-service/Dockerfile
@@ -77,6 +86,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3004
       - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
@@ -95,10 +105,12 @@ services:
       logging: "alloy"
 
   streaming-service:
+    container_name: streaming-service
     build:
       context: .
       dockerfile: packages/streaming-service/Dockerfile
     environment:
+      - TZ=UTC
       - PORT=3003
       - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
@@ -110,6 +122,7 @@ services:
       logging: "alloy"
 
   thumbnail-generator:
+    container_name: thumbnail-generator
     build:
       context: .
       dockerfile: packages/thumbnail-generator/Dockerfile
@@ -117,6 +130,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
     labels:
@@ -124,8 +138,10 @@ services:
 
   # Monitoring Stack
   prometheus:
-    image: prom/prometheus:latest
     container_name: prometheus
+    image: prom/prometheus:latest
+    environment:
+      - TZ=UTC
     ports:
       - "9090:9090"
     volumes:
@@ -143,8 +159,10 @@ services:
       logging: "alloy"
 
   loki:
-    image: grafana/loki:2.9.3
     container_name: loki
+    image: grafana/loki:2.9.3
+    environment:
+      - TZ=UTC
     ports:
       - "3100:3100"
     volumes:
@@ -156,8 +174,10 @@ services:
       logging: "alloy"
 
   grafana-alloy:
-    image: grafana/alloy:latest
     container_name: grafana-alloy
+    image: grafana/alloy:latest
+    environment:
+      - TZ=UTC
     ports:
       - "12345:12345"  # Alloy UI
     volumes:
@@ -180,11 +200,12 @@ services:
       logging: "alloy"
 
   grafana:
-    image: grafana/grafana:latest
     container_name: grafana
+    image: grafana/grafana:latest
     ports:
       - "3000:3000"
     environment:
+      - TZ=UTC
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_ALLOW_SIGN_UP=false
