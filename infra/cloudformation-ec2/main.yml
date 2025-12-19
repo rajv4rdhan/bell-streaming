@@ -30,7 +30,7 @@ Resources:
   NetworkStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/cloudformation/network.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/network.yml'
       Tags:
         - Key: Name
           Value: bell-streaming-network
@@ -39,7 +39,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     DependsOn: NetworkStack
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/cloudformation/security.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/security.yml'
       Parameters:
         VPCId: !GetAtt NetworkStack.Outputs.VPCId
       Tags:
@@ -52,7 +52,7 @@ Resources:
       - NetworkStack
       - SecurityStack
     Properties:
-      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/cloudformation/compute.yml'
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/compute.yml'
       Parameters:
         KeyName: !Ref KeyName
         SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId

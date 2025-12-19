@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     networks:
       - default
+    labels:
+      logging: "promtail"
   auth-service:
     build:
       context: .
@@ -153,7 +155,7 @@ services:
       logging: "promtail"
 
   promtail:
-    image: grafana/promtail:2.9.3
+    image: grafana/promtail:latest
     container_name: promtail
     volumes:
       - ./monitoring/promtail:/etc/promtail
