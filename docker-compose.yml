@@ -44,7 +44,7 @@ services:
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   video-metadata-service:
     build:
@@ -67,7 +67,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   video-upload-service:
     build:
@@ -92,7 +92,7 @@ services:
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   streaming-service:
     build:
@@ -107,7 +107,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   thumbnail-generator:
     build:
@@ -120,7 +120,7 @@ services:
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   # Monitoring Stack
   prometheus:
@@ -137,9 +137,10 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
     restart: unless-stopped
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
   loki:
     image: grafana/loki:2.9.3
@@ -152,19 +153,31 @@ services:
     command: -config.file=/etc/loki/loki-config.yml
     restart: unless-stopped
     labels:
-      logging: "promtail"
+      logging: "alloy"
 
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
+  grafana-alloy:
+    image: grafana/alloy:latest
+    container_name: grafana-alloy
+    ports:
+      - "12345:12345"  # Alloy UI
     volumes:
-      - ./monitoring/promtail:/etc/promtail
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    command: -config.file=/etc/promtail/promtail-config.yml
+      - ./monitoring/alloy:/etc/alloy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/host/root:ro
+      - /sys:/host/sys:ro
+      - /proc:/host/proc:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    privileged: true
     restart: unless-stopped
     depends_on:
+      - prometheus
       - loki
+    labels:
+      logging: "alloy"
 
   grafana:
     image: grafana/grafana:latest
@@ -184,25 +197,7 @@ services:
       - prometheus
       - loki
     labels:
-      logging: "promtail"
-
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: node-exporter
-    ports:
-      - "9100:9100"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    restart: unless-stopped
-    labels:
-      logging: "promtail"
+      logging: "alloy"
 
 volumes:
   prometheus-data:

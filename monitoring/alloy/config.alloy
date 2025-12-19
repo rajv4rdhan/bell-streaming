@@ -1,0 +1,151 @@
+// Grafana Alloy configuration
+// Replaces: Promtail, Node Exporter, and cAdvisor
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// ====================
+// PROMETHEUS METRICS
+// ====================
+
+// Scrape own metrics
+prometheus.exporter.self "alloy" { }
+
+prometheus.scrape "alloy" {
+  targets    = prometheus.exporter.self.alloy.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+// Node Exporter - Host metrics
+prometheus.exporter.unix "node" {
+  enable_collectors = [
+    "cpu",
+    "diskstats",
+    "filesystem",
+    "loadavg",
+    "meminfo",
+    "netdev",
+    "netstat",
+    "stat",
+    "time",
+    "uname",
+  ]
+}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+// cAdvisor - Container metrics
+prometheus.exporter.cadvisor "containers" {
+  docker_host = "unix:///var/run/docker.sock"
+  store_container_labels = true
+  
+  // Only monitor Docker containers
+  docker_only = true
+}
+
+prometheus.scrape "cadvisor" {
+  targets    = prometheus.exporter.cadvisor.containers.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+  
+  clustering {
+    enabled = false
+  }
+}
+
+// Scrape application metrics endpoints
+prometheus.scrape "services" {
+  targets = [
+    {
+      "__address__" = "auth-service:3001",
+      "job"         = "auth-service",
+    },
+    {
+      "__address__" = "video-upload-service:3004",
+      "job"         = "video-upload-service",
+    },
+    {
+      "__address__" = "video-metadata-service:3002",
+      "job"         = "video-metadata-service",
+    },
+    {
+      "__address__" = "streaming-service:3003",
+      "job"         = "streaming-service",
+    },
+    {
+      "__address__" = "thumbnail-generator:8080",
+      "job"         = "thumbnail-generator",
+    },
+  ]
+  
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+  forward_to      = [prometheus.remote_write.default.receiver]
+}
+
+// Send metrics to Prometheus
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ====================
+// LOKI LOGS
+// ====================
+
+// Discover Docker containers
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+  
+  filter {
+    name   = "label"
+    values = ["logging=alloy"]
+  }
+}
+
+// Read container logs
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.docker.containers.targets
+  forward_to       = [loki.write.default.receiver]
+  refresh_interval = "5s"
+  relabel_rules    = discovery.relabel.docker_labels.rules
+}
+
+// Relabel rules to add service/container labels
+discovery.relabel "docker_labels" {
+  targets = discovery.docker.containers.targets
+  
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+  
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+  
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+  
+  rule {
+    replacement = "docker"
+    target_label = "job"
+  }
+}
+
+// Send logs to Loki
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

@@ -11,33 +11,6 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Host system metrics via Node Exporter
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
-
-  # Add your microservices here when they expose /metrics endpoint
-  - job_name: 'auth-service'
-    static_configs:
-      - targets: ['auth-service:3001']
-    metrics_path: '/metrics'
-  
-  - job_name: 'video-upload-service'
-    static_configs:
-      - targets: ['video-upload-service:3004']
-    metrics_path: '/metrics'
-  
-  - job_name: 'video-metadata-service'
-    static_configs:
-      - targets: ['video-metadata-service:3002']
-    metrics_path: '/metrics'
-  
-  - job_name: 'streaming-service'
-    static_configs:
-      - targets: ['streaming-service:3003']
-    metrics_path: '/metrics'
-  
-  - job_name: 'thumbnail-generator'
-    static_configs:
-      - targets: ['thumbnail-generator:8080']
-    metrics_path: '/actuator/prometheus'
+  # All metrics are now collected by Grafana Alloy and pushed to Prometheus
+  # Alloy combines: Node Exporter + cAdvisor + Promtail + Service metrics
+  # Access Alloy UI at http://localhost:12345
