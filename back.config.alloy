@@ -1,3 +1,6 @@
+// Grafana Alloy configuration
+// Replaces: Promtail, Node Exporter, and cAdvisor
+
 logging {
   level  = "info"
   format = "logfmt"
@@ -7,23 +10,36 @@ logging {
 // PROMETHEUS METRICS
 // ====================
 
-// 1. Configure the Scraper (Alloy itself)
-prometheus.exporter.self "alloy" {}
+// Scrape own metrics
+prometheus.exporter.self "alloy" { }
+
 prometheus.scrape "alloy" {
   targets    = prometheus.exporter.self.alloy.targets
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
-// 2. Configure Node Exporter (Host Metrics)
+// Node Exporter - Host metrics
 prometheus.exporter.unix "node" {
-  enable_collectors = ["cpu", "meminfo", "diskstats", "filesystem", "loadavg", "netdev", "netstat", "time", "uname"]
+  enable_collectors = [
+    "cpu",
+    "diskstats",
+    "filesystem",
+    "loadavg",
+    "meminfo",
+    "netdev",
+    "netstat",
+    "stat",
+    "time",
+    "uname",
+  ]
 }
+
 prometheus.scrape "node" {
   targets    = prometheus.exporter.unix.node.targets
   forward_to = [prometheus.remote_write.default.receiver]
 }
 
-// 3. Configure cAdvisor (Container Metrics)
+// cAdvisor - Container metrics
 prometheus.exporter.cadvisor "containers" {
   docker_host = "unix:///var/run/docker.sock"
   store_container_labels = true
@@ -34,48 +50,75 @@ prometheus.exporter.cadvisor "containers" {
 prometheus.scrape "cadvisor" {
   targets    = prometheus.exporter.cadvisor.containers.targets
   forward_to = [prometheus.relabel.cadvisor.receiver]
+  
   scrape_interval = "15s"
+  
+  clustering {
+    enabled = false
+  }
 }
 
-// 4. Relabel cAdvisor (FIXED: Valid Syntax)
+// Relabel cAdvisor metrics to add container information
 prometheus.relabel "cadvisor" {
   forward_to = [prometheus.remote_write.default.receiver]
 
-  // Rule 1: Extract service name from Docker Compose label
+  // 1. Drop empty names (clean up noise)
+  rule {
+    source_labels = ["name"]
+    regex         = ""
+    action        = "drop"
+  }
+
+  // 2. Try to find the service name from Label Variation A
   rule {
     source_labels = ["container_label_com_docker_compose_service"]
     target_label  = "service"
   }
 
-  // Rule 2: Initialize 'container' label using 'id' (The Fallback)
+  // 3. Try to find the service name from Label Variation B (Common fallback)
   rule {
-    source_labels = ["id"]
-    target_label  = "container"
+    source_labels = ["container_label_service"]
+    target_label  = "service"
   }
-
-  // Rule 3: If 'name' is NOT empty, overwrite 'container' with 'name'
+  
+  // 4. Create 'container' label from name
   rule {
     source_labels = ["name"]
-    regex         = "(.+)"  // Only match if name has characters
     target_label  = "container"
   }
 }
 
-// 5. Scrape Your App Services
+// Scrape application metrics endpoints
 prometheus.scrape "services" {
   targets = [
-    { "__address__" = "auth-service:3001", "job" = "auth-service" },
-    { "__address__" = "video-upload-service:3004", "job" = "video-upload-service" },
-    { "__address__" = "video-metadata-service:3002", "job" = "video-metadata-service" },
-    { "__address__" = "streaming-service:3003", "job" = "streaming-service" },
-    { "__address__" = "thumbnail-generator:8080", "job" = "thumbnail-generator" },
+    {
+      "__address__" = "auth-service:3001",
+      "job"         = "auth-service",
+    },
+    {
+      "__address__" = "video-upload-service:3004",
+      "job"         = "video-upload-service",
+    },
+    {
+      "__address__" = "video-metadata-service:3002",
+      "job"         = "video-metadata-service",
+    },
+    {
+      "__address__" = "streaming-service:3003",
+      "job"         = "streaming-service",
+    },
+    {
+      "__address__" = "thumbnail-generator:8080",
+      "job"         = "thumbnail-generator",
+    },
   ]
+  
   scrape_interval = "15s"
   metrics_path    = "/metrics"
   forward_to      = [prometheus.remote_write.default.receiver]
 }
 
-// 6. Send to Prometheus
+// Send metrics to Prometheus
 prometheus.remote_write "default" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"
@@ -86,38 +129,57 @@ prometheus.remote_write "default" {
 // LOKI LOGS
 // ====================
 
+// 1. Discover Docker containers
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
+  
   filter {
     name   = "label"
     values = ["logging=alloy"]
   }
 }
 
+// 2. Relabel targets BEFORE scraping
+// This converts the temporary __meta labels into permanent labels
 discovery.relabel "container_logs" {
   targets = discovery.docker.containers.targets
+
+  // Extract container name (removes the leading slash)
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex         = "/?(.*)"
+    regex         = "/(.*)"
     target_label  = "container"
   }
+
+  // Extract Docker Compose service name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     target_label  = "service"
   }
+
+  // Extract Docker Compose project name
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    target_label  = "project"
+  }
+
+  // Assign a static job label
   rule {
     target_label = "job"
     replacement  = "docker"
   }
 }
 
+// 3. Read container logs using the RELABELED targets
 loki.source.docker "containers" {
   host             = "unix:///var/run/docker.sock"
+  // NOTICE: We now use the output of the relabel component, not the raw discovery
   targets          = discovery.relabel.container_logs.output
   forward_to       = [loki.write.default.receiver]
   refresh_interval = "5s"
 }
 
+// 4. Send logs to Loki
 loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
