@@ -47,7 +47,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -e
-          
+          export HOME=/root
           # Update system
           apt-get update -y
           apt-get upgrade -y
@@ -72,39 +72,17 @@ Resources:
           apt-get update && apt-get install -y doppler
           
           # Clone repository
-          cd /opt
+          mkdir app
+          cd /app
           git clone https://rajv4rdhan:${GitHubPAT}@github.com/${GitHubRepo}.git bell-streaming
-          cd bell-streaming
+          cd /app/bell-streaming
           git checkout ${GitHubBranch}
           
           # Configure Doppler
           export DOPPLER_TOKEN="${DopplerToken}"
-          
-          cd bell-streaming
           doppler secrets download --no-file --format env > .env
           
           docker-compose up --build -d
-          
-          
-          # Create systemd service
-          cat > /etc/systemd/system/bell-streaming.service << 'SERVICE_EOF'
-          [Unit]
-          Description=Bell Streaming Platform
-          Requires=docker.service
-          After=docker.service
-          
-          [Service]
-          Type=oneshot
-          RemainAfterExit=yes
-          WorkingDirectory=/opt/bell-streaming
-          ExecStart=/usr/local/bin/docker-compose up -d
-          ExecStop=/usr/local/bin/docker-compose down
-          
-          [Install]
-          WantedBy=multi-user.target
-          SERVICE_EOF
-          
-          systemctl enable bell-streaming.service
           
           echo "Bell Streaming Platform deployed successfully!"
       Tags:
