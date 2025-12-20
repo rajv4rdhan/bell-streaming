@@ -2,6 +2,9 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+ARG VITE_API_BASE_URL
+ARG VITE_CLOUDFRONT_URL
+
 # Copy all package files
 COPY package*.json ./
 COPY packages/admin-ui/package*.json ./packages/admin-ui/

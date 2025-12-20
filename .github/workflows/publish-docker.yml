@@ -65,4 +65,6 @@ jobs:
             org.opencontainers.image.version=${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            ${{ matrix.service.name == 'admin-ui' && format('VITE_API_BASE_URL={0}\nVITE_CLOUDFRONT_URL={1}', 'http://bell.tuneloom.cfd/api', 'https://drmcv4972t1k7.cloudfront.net') || '' }}
       
