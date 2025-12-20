@@ -19,8 +19,8 @@ export const DashboardPage = () => {
   }
 
   const totalVideos = videos?.total || 0;
-  const totalViews = videos?.videos?.reduce((sum, v) => sum + (v.views || 0), 0) || 0;
-  const publicVideos = videos?.videos?.filter(v => v.visibility === 'public').length || 0;
+  const totalViews = videos?.videos?.reduce((sum: number, v: any) => sum + (v.views || 0), 0) || 0;
+  const publicVideos = videos?.videos?.filter((v: any) => v.visibility === 'public').length || 0;
   const completedVideos = videos?.videos?.filter(v => v.uploadStatus === 'completed').length || 0;
 
   const statCards = [
@@ -112,7 +112,7 @@ export const DashboardPage = () => {
           </div>
           <div className="space-y-3">
             {recentVideos.length > 0 ? (
-              recentVideos.map((video, index) => (
+              recentVideos.map((video: any, index: number) => (
                 <div 
                   key={video._id} 
                   className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors group"

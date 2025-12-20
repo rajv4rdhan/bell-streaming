@@ -15,6 +15,10 @@ COPY packages/admin-ui ./packages/admin-ui
 COPY packages/shared-ui ./packages/shared-ui
 COPY tsconfig.base.json ./
 
+# Build shared-ui first
+WORKDIR /app/packages/shared-ui
+RUN npm run build
+
 # Build the application
 WORKDIR /app/packages/admin-ui
 RUN npm run build

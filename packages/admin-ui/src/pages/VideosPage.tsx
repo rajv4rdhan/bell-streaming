@@ -68,7 +68,7 @@ export const VideosPage = () => {
               type="search"
               placeholder="Search videos..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
               className="border-zinc-200 bg-white focus:border-zinc-400 focus:ring-zinc-400"
             />
           </div>

@@ -65,7 +65,7 @@ export const UploadPage = () => {
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
       promptForThumbnail: thumbnailPrompt || undefined,
     }),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       const id = response.data.video._id;
       setVideoId(id);
       setStageStatus(prev => ({ ...prev, metadata: 'complete' }));
@@ -83,7 +83,7 @@ export const UploadPage = () => {
   const getPresignedUrlMutation = useMutation({
     mutationFn: ({ videoId, contentType }: { videoId: string; contentType: string }) => 
       videoUploadApi.getPresignedUrl({ videoId, contentType }),
-    onSuccess: (response) => {
+    onSuccess: (response: any) => {
       const { presignedUrl: url, s3Key: key } = response.data;
       setS3Key(key);
       setStageStatus(prev => ({ ...prev, presigning: 'complete' }));
@@ -281,27 +281,27 @@ export const UploadPage = () => {
             <Input
               label="Video Title"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
               placeholder="e.g., My Awesome Video"
               required
             />
             <Input
               label="Description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDescription(e.target.value)}
               placeholder="A short summary of the video content"
               required
             />
             <Input
               label="Tags (comma-separated)"
               value={tags}
-              onChange={(e) => setTags(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)}
               placeholder="e.g., tech, tutorial, javascript"
             />
             <Input
               label="Thumbnail Prompt (Optional)"
               value={thumbnailPrompt}
-              onChange={(e) => setThumbnailPrompt(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setThumbnailPrompt(e.target.value)}
               placeholder="e.g., A futuristic cityscape at sunset"
             />
             <Button
