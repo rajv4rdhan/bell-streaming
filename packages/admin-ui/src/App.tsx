@@ -8,7 +8,7 @@ import { UploadPage } from './pages/UploadPage';
 import { UsersPage } from './pages/UsersPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 
-function App() 
+function App() {
   const { isAuthenticated } = useAuth();
 
   return (
