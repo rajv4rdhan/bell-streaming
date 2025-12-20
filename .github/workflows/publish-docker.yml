@@ -26,6 +26,8 @@ jobs:
             dockerfile: packages/streaming-service/Dockerfile
           - name: thumbnail-generator
             dockerfile: packages/thumbnail-generator/Dockerfile
+          - name: admin-ui
+            dockerfile: packages/admin-ui/Dockerfile
           - name: nginx
             dockerfile: nginx/Dockerfile
     

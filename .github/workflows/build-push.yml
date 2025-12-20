@@ -9,6 +9,7 @@ on:
       - 'packages/**'
       - 'nginx/**'
       - 'docker-compose.prod.yml'
+      - 'docker-compose.yml'
   pull_request:
     branches:
       - main
@@ -34,6 +35,7 @@ jobs:
       video-upload-service: ${{ steps.filter.outputs.video-upload-service }}
       streaming-service: ${{ steps.filter.outputs.streaming-service }}
       thumbnail-generator: ${{ steps.filter.outputs.thumbnail-generator }}
+      admin-ui: ${{ steps.filter.outputs.admin-ui }}
     steps:
       - uses: actions/checkout@v4
       
@@ -53,6 +55,8 @@ jobs:
               - 'packages/streaming-service/**'
             thumbnail-generator:
               - 'packages/thumbnail-generator/**'
+            admin-ui:
+              - 'packages/admin-ui/**'
 
   build-and-push:
     needs: detect-changes
@@ -84,6 +88,10 @@ jobs:
             path: packages/thumbnail-generator
             dockerfile: packages/thumbnail-generator/Dockerfile
             image: bell-streaming-thumbnail-generator
+          - name: admin-ui
+            path: packages/admin-ui
+            dockerfile: packages/admin-ui/Dockerfile
+            image: bell-streaming-admin-ui
     
     steps:
       - name: Check if should build
