@@ -16,7 +16,10 @@
     "build": "npm run build --workspaces --if-present",
     "build:all": "npm run build --workspace=@bell-streaming/shared-ui && npm run build --workspace=@bell-streaming/auth-service && npm run build --workspace=@bell-streaming/video-metadata-service && npm run build --workspace=@bell-streaming/video-upload-service && npm run build --workspace=@bell-streaming/streaming-service && npm run build --workspace=@bell-streaming/admin-ui && npm run build --workspace=@bell-streaming/frontend-ui && cd packages/thumbnail-generator && mvn clean install",
     "build:admin-ui": "npm run build --workspace=@bell-streaming/shared-ui && npm run build --workspace=@bell-streaming/admin-ui",
-    "install:all": "npm install --workspaces"
+    "install:all": "npm install --workspaces",
+    "dev:compose": "docker compose up --build -d",
+    "prod:compose": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d",
+    "down": "docker compose down"
   },
   "private": true,
   "devDependencies": {
