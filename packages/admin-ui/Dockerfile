@@ -2,8 +2,6 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-ARG VITE_API_BASE_URL
-ARG VITE_CLOUDFRONT_URL
 
 # Copy all package files
 COPY package*.json ./
@@ -22,6 +20,11 @@ RUN npm run build
 
 # Build the application
 WORKDIR /app/packages/admin-ui
+
+# Set environment variables for Vite build
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_CLOUDFRONT_URL=$VITE_CLOUDFRONT_URL
+
 RUN npm run build:docker
 
 # Runtime stage
