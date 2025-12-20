@@ -2,7 +2,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copy package files
+# Copy all package files
 COPY package*.json ./
 COPY packages/admin-ui/package*.json ./packages/admin-ui/
 COPY packages/shared-ui/package*.json ./packages/shared-ui/
@@ -10,10 +10,8 @@ COPY packages/shared-ui/package*.json ./packages/shared-ui/
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY packages/admin-ui ./packages/admin-ui
-COPY packages/shared-ui ./packages/shared-ui
-COPY tsconfig.base.json ./
+# Copy entire project (source code, configs, etc.)
+COPY . .
 
 # Build shared-ui first
 WORKDIR /app/packages/shared-ui
