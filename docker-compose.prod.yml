@@ -1,9 +1,9 @@
-version: '3.8'
-
 services:
   nginx:
-    image: rajv4rdhan/bell-streaming-nginx:latest
     container_name: nginx
+    image: rajv4rdhan/bell-streaming-nginx:latest
+    environment:
+      - TZ=UTC
     ports:
       - "8081:80"
     depends_on:
@@ -13,16 +13,8 @@ services:
       - streaming-service
       - thumbnail-generator
       - admin-ui
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
   cloudflared:
     container_name: cloudflared
@@ -35,133 +27,124 @@ services:
       - nginx
     restart: unless-stopped
     networks:
-      - bell-streaming-network
+      - default
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
   auth-service:
-    image: rajv4rdhan/bell-streaming-auth-service:latest
     container_name: auth-service
+    image: rajv4rdhan/bell-streaming-auth-service:latest
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3001
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-15m}
-      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN:-7d}
-      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS:-900000}
-      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS:-100}
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - JWT_REFRESH_EXPIRES_IN=${JWT_REFRESH_EXPIRES_IN}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
   admin-ui:
-    image: rajv4rdhan/bell-streaming-admin-ui:latest
     container_name: admin-ui
+    image: rajv4rdhan/bell-streaming-admin-ui:latest
     environment:
       - TZ=UTC
     ports:
       - "5173:80"
-    networks:
-      - bell-streaming-network
     restart: unless-stopped
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
   video-metadata-service:
-    image: rajv4rdhan/bell-streaming-video-metadata-service:latest
     container_name: video-metadata-service
+    image: rajv4rdhan/bell-streaming-video-metadata-service:latest
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3002
+      - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
       - JWT_SECRET=${JWT_SECRET}
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
-    labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  video-upload-service:
-    image: rajv4rdhan/bell-streaming-video-upload-service:latest
-    container_name: video-upload-service
-    environment:
-      - PORT=3004
-      - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
-      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+      - PUBLIC_URL=${PUBLIC_URL}
+      - AWS_REGION=${AWS_REGION}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
+
+  video-upload-service:
+    container_name: video-upload-service
+    image: rajv4rdhan/bell-streaming-video-upload-service:latest
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
+    environment:
+      - TZ=UTC
+      - PORT=3004
+      - NODE_ENV=production
+      - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_PRESIGNED_URL_EXPIRATION=${S3_PRESIGNED_URL_EXPIRATION}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-500}
+      - ALLOWED_VIDEO_TYPES=${ALLOWED_VIDEO_TYPES}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
+      - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+    labels:
+      logging: "alloy"
 
   streaming-service:
-    image: rajv4rdhan/bell-streaming-streaming-service:latest
     container_name: streaming-service
+    image: rajv4rdhan/bell-streaming-streaming-service:latest
     environment:
+      - TZ=UTC
       - PORT=3003
+      - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
   thumbnail-generator:
-    image: rajv4rdhan/bell-streaming-thumbnail-generator:latest
     container_name: thumbnail-generator
+    image: rajv4rdhan/bell-streaming-thumbnail-generator:latest
+    dns:
+      - 172.19.2.254
+      - 8.8.4.4
     environment:
+      - TZ=UTC
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
-  # Monitoring Stack (Optional)
+  # Monitoring Stack
   prometheus:
-    image: prom/prometheus:latest
     container_name: prometheus
+    image: prom/prometheus:latest
+    environment:
+      - TZ=UTC
     ports:
       - "9090:9090"
     volumes:
@@ -170,30 +153,36 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-    networks:
-      - bell-streaming-network
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
     restart: unless-stopped
+    labels:
+      logging: "alloy"
 
   loki:
-    image: grafana/loki:2.9.3
     container_name: loki
+    image: grafana/loki:2.9.3
+    environment:
+      - TZ=UTC
     ports:
       - "3100:3100"
     volumes:
       - ./monitoring/loki:/etc/loki
       - loki-data:/loki
     command: -config.file=/etc/loki/loki-config.yml
-    networks:
-      - bell-streaming-network
     restart: unless-stopped
+    labels:
+      logging: "alloy"
 
   grafana-alloy:
-    image: grafana/alloy:latest
     container_name: grafana-alloy
+    image: grafana/alloy:latest
     environment:
       - TZ=UTC
     ports:
-      - "12345:12345"
+      - "12345:12345"  # Alloy UI
     volumes:
       - ./monitoring/alloy:/etc/alloy
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -206,19 +195,20 @@ services:
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
     privileged: true
-    networks:
-      - bell-streaming-network
     restart: unless-stopped
     depends_on:
       - prometheus
       - loki
+    labels:
+      logging: "alloy"
 
   grafana:
-    image: grafana/grafana:latest
     container_name: grafana
+    image: grafana/grafana:latest
     ports:
       - "3000:3000"
     environment:
+      - TZ=UTC
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_ALLOW_SIGN_UP=false
@@ -226,35 +216,12 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    networks:
-      - bell-streaming-network
     restart: unless-stopped
     depends_on:
       - prometheus
       - loki
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
-    container_name: cadvisor
-    ports:
-      - "8080:8080"
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker:/var/lib/docker:ro
-      - /dev/disk:/dev/disk:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
-    command:
-      - '--docker_only=true'
-      - '--housekeeping_interval=10s'
-      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
-    networks:
-      - bell-streaming-network
-    restart: unless-stopped
+    labels:
+      logging: "alloy"
 
   watchtower:
     container_name: watchtower
@@ -270,16 +237,9 @@ services:
       - WATCHTOWER_NOTIFICATIONS_LEVEL=info
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - bell-streaming-network
     restart: unless-stopped
     labels:
-      logging: "promtail"
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      logging: "alloy"
 
 volumes:
   prometheus-data:
@@ -287,5 +247,5 @@ volumes:
   grafana-data:
 
 networks:
-  bell-streaming-network:
-    driver: bridge
+  default:
+    name: bell-streaming-network
