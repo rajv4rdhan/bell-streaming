@@ -145,7 +145,7 @@ export const VideosPage = () => {
                       }`}>
                         {video.visibility}
                       </span>
-                      {video.tags && video.tags.slice(0, 2).map((tag, index) => (
+                      {video.tags && video.tags.slice(0, 2).map((tag: string, index: number) => (
                         <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-zinc-100 text-zinc-600 border border-zinc-200">
                           {tag}
                         </span>
@@ -233,7 +233,7 @@ export const VideosPage = () => {
                 <div>
                   <h3 className="text-sm font-semibold text-zinc-700 mb-2">Tags</h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedVideo.tags.map((tag, index) => (
+                    {selectedVideo.tags.map((tag: string, index: number) => (
                       <span key={index} className="px-2.5 py-1 bg-zinc-100 text-zinc-700 rounded-md text-xs border border-zinc-200">
                         {tag}
                       </span>

@@ -15,7 +15,7 @@ export const config = {
     refreshExpiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as string,
   },
   cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5176'],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5176', 'http://admin.bell.tuneloom.cfd'],
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),

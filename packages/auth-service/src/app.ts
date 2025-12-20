@@ -18,8 +18,8 @@ export const createApp = (): Application => {
   // CORS configuration
   app.use(
     cors({
-      origin: process.env.CORS_ORIGIN,
-      credentials: false,
+      origin: process.env.ALLOWED_ORIGINS?.split(',') || config.cors.allowedOrigins,
+      credentials: true,
     })
   );
 
