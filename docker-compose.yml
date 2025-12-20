@@ -58,6 +58,9 @@ services:
     build:
       context: .
       dockerfile: packages/admin-ui/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://bell.tuneloom.cfd/api
+        VITE_CLOUDFRONT_URL: https://drmcv4972t1k7.cloudfront.net
     environment:
       - TZ=UTC
     ports:
