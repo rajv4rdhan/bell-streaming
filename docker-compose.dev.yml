@@ -1,9 +1,12 @@
 
 services:
   nginx:
+    container_name: nginx
     build:
       context: .
       dockerfile: nginx/Dockerfile
+    environment:
+      - TZ=UTC
     ports:
       - "8081:80"
     depends_on:
@@ -12,18 +15,23 @@ services:
       - video-upload-service
       - streaming-service
       - thumbnail-generator
+      - admin-ui
   cloudflared:
-    image: cloudflare/cloudflared:latest
     container_name: cloudflared
+    image: cloudflare/cloudflared:latest
     command: tunnel run
     environment:
+      - TZ=UTC
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       - nginx
     restart: unless-stopped
     networks:
       - default
+    labels:
+      logging: "alloy"
   auth-service:
+    container_name: auth-service
     build:
       context: .
       dockerfile: packages/auth-service/Dockerfile
@@ -31,6 +39,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3001
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
@@ -41,8 +50,24 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+    labels:
+      logging: "alloy"
+
+  admin-ui:
+    container_name: admin-ui
+    build:
+      context: .
+      dockerfile: packages/admin-ui/Dockerfile
+    environment:
+      - TZ=UTC
+    ports:
+      - "5173:80"
+    restart: unless-stopped
+    labels:
+      logging: "alloy"
 
   video-metadata-service:
+    container_name: video-metadata-service
     build:
       context: .
       dockerfile: packages/video-metadata-service/Dockerfile
@@ -50,6 +75,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3002
       - NODE_ENV=production
       - MONGODB_URI=${MONGODB_URI}
@@ -58,8 +84,15 @@ services:
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
       - PUBLIC_URL=${PUBLIC_URL}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+    labels:
+      logging: "alloy"
 
   video-upload-service:
+    container_name: video-upload-service
     build:
       context: .
       dockerfile: packages/video-upload-service/Dockerfile
@@ -67,6 +100,7 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - PORT=3004
       - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002/api/admin/videos
@@ -81,12 +115,16 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+    labels:
+      logging: "alloy"
 
   streaming-service:
+    container_name: streaming-service
     build:
       context: .
       dockerfile: packages/streaming-service/Dockerfile
     environment:
+      - TZ=UTC
       - PORT=3003
       - NODE_ENV=production
       - VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002
@@ -94,8 +132,11 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+    labels:
+      logging: "alloy"
 
   thumbnail-generator:
+    container_name: thumbnail-generator
     build:
       context: .
       dockerfile: packages/thumbnail-generator/Dockerfile
@@ -103,8 +144,118 @@ services:
       - 172.19.2.254
       - 8.8.4.4
     environment:
+      - TZ=UTC
       - FREEPIK_API_KEY=${FREEPIK_API_KEY}
       - WEBHOOK_URL=${WEBHOOK_URL}
+    labels:
+      logging: "alloy"
+
+  # Monitoring Stack
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    environment:
+      - TZ=UTC
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-remote-write-receiver'
+    restart: unless-stopped
+    labels:
+      logging: "alloy"
+
+  loki:
+    container_name: loki
+    image: grafana/loki:2.9.3
+    environment:
+      - TZ=UTC
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki:/etc/loki
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    restart: unless-stopped
+    labels:
+      logging: "alloy"
+
+  grafana-alloy:
+    container_name: grafana-alloy
+    image: grafana/alloy:latest
+    environment:
+      - TZ=UTC
+    ports:
+      - "12345:12345"  # Alloy UI
+    volumes:
+      - ./monitoring/alloy:/etc/alloy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/host/root:ro
+      - /sys:/host/sys:ro
+      - /proc:/host/proc:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    privileged: true
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    labels:
+      logging: "alloy"
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - TZ=UTC
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - loki
+    labels:
+      logging: "alloy"
+
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower:latest
+    environment:
+      - TZ=UTC
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_REVIVE_STOPPED=false
+      - WATCHTOWER_NO_STARTUP_MESSAGE=false
+      - WATCHTOWER_NOTIFICATIONS_LEVEL=info
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    labels:
+      logging: "alloy"
+
+volumes:
+  prometheus-data:
+  loki-data:
+  grafana-data:
 
 networks:
   default:
