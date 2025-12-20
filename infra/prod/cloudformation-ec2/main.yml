@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Bell Streaming Platform - Main Stack'
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Select existing EC2 Key Pair
+  
+  GitHubPAT:
+    Type: String
+    Description: GitHub Personal Access Token
+    NoEcho: true
+  
+  GitHubRepo:
+    Type: String
+    Description: GitHub repository (owner/repo)
+    Default: rajv4rdhan/bellStreaming
+  
+  GitHubBranch:
+    Type: String
+    Description: Git branch
+    Default: main
+  
+  DopplerToken:
+    Type: String
+    Description: Doppler service token
+    NoEcho: true
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/network.yml'
+      Tags:
+        - Key: Name
+          Value: bell-streaming-network
+
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/security.yml'
+      Parameters:
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+      Tags:
+        - Key: Name
+          Value: bell-streaming-security
+
+  ComputeStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+      - SecurityStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates1/cloudformation/compute.yml'
+      Parameters:
+        KeyName: !Ref KeyName
+        SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
+        SecurityGroupId: !GetAtt SecurityStack.Outputs.SecurityGroupId
+        GitHubPAT: !Ref GitHubPAT
+        GitHubRepo: !Ref GitHubRepo
+        GitHubBranch: !Ref GitHubBranch
+        DopplerToken: !Ref DopplerToken
+      Tags:
+        - Key: Name
+          Value: bell-streaming-compute
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !GetAtt ComputeStack.Outputs.InstanceId
+  
+  PublicIP:
+    Description: Public IP Address
+    Value: !GetAtt ComputeStack.Outputs.PublicIP
+  
+  PublicDNS:
+    Description: Public DNS Name
+    Value: !GetAtt ComputeStack.Outputs.PublicDNS
+  
+  ApplicationURL:
+    Description: Application URL
+    Value: !Sub 'http://${ComputeStack.Outputs.PublicIP}:8081'
+  
+  GrafanaURL:
+    Description: Grafana Dashboard
+    Value: !Sub 'http://${ComputeStack.Outputs.PublicIP}:3000'

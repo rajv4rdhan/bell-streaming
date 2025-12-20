@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EC2 Instance for Bell Streaming Platform'
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+  
+  SubnetId:
+    Type: String
+  
+  SecurityGroupId:
+    Type: String
+  
+  GitHubPAT:
+    Type: String
+    NoEcho: true
+  
+  GitHubRepo:
+    Type: String
+    Default: rajv4rdhan/bellStreaming
+  
+  GitHubBranch:
+    Type: String
+    Default: main
+  
+  DopplerToken:
+    Type: String
+    NoEcho: true
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0ecb62995f68bb549
+      InstanceType: t3.medium
+      KeyName: !Ref KeyName
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref SecurityGroupId
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 30
+            VolumeType: gp3
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          export HOME=/root
+          # Update system
+          apt-get update -y
+          apt-get upgrade -y
+          
+          # Install Git
+          apt-get install -y git curl
+          
+          # Install Docker
+          curl -fsSL https://get.docker.com -o get-docker.sh
+          sh get-docker.sh
+          systemctl enable docker
+          systemctl start docker
+          
+          # Install Docker Compose
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          
+          # Install Doppler CLI
+          apt-get update && apt-get install -y apt-transport-https ca-certificates gnupg
+          curl -sLf --retry 3 --tlsv1.2 --proto "=https" 'https://packages.doppler.com/public/cli/gpg.DE2A7741A397C129.key' | gpg --dearmor -o /usr/share/keyrings/doppler-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/doppler-archive-keyring.gpg] https://packages.doppler.com/public/cli/deb/debian any-version main" | tee /etc/apt/sources.list.d/doppler-cli.list
+          apt-get update && apt-get install -y doppler
+          
+          # Clone repository
+          mkdir -p /app
+          cd /app
+          git clone https://rajv4rdhan:${GitHubPAT}@github.com/${GitHubRepo}.git bell-streaming
+          cd /app/bell-streaming
+          git checkout ${GitHubBranch}
+          
+          # Configure Doppler
+          export DOPPLER_TOKEN="${DopplerToken}"
+          doppler secrets download --no-file --format env > .env
+          
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+          
+          echo "Bell Streaming Platform deployed successfully!"
+      Tags:
+        - Key: Name
+          Value: bell-streaming-ec2
+
+Outputs:
+  InstanceId:
+    Value: !Ref EC2Instance
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceId'
+  
+  PublicIP:
+    Value: !GetAtt EC2Instance.PublicIp
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicIP'
+  
+  PublicDNS:
+    Value: !GetAtt EC2Instance.PublicDnsName
+    Export:
+      Name: !Sub '${AWS::StackName}-PublicDNS'

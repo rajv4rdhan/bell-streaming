@@ -1,0 +1,542 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Cluster and Services for Bell Streaming Platform'
+
+Parameters:
+  VPCId:
+    Type: String
+  PublicSubnet1:
+    Type: String
+  PublicSubnet2:
+    Type: String
+  SecurityGroupId:
+    Type: String
+  ALBSecurityGroupId:
+    Type: String
+  DockerHubUsername:
+    Type: String
+    Default: rajv4rdhan
+  ImageTag:
+    Type: String
+    Default: latest
+  MongoDBURI:
+    Type: String
+    NoEcho: true
+  JWTSecret:
+    Type: String
+    NoEcho: true
+  CloudflareTunnelToken:
+    Type: String
+    NoEcho: true
+
+  AWSRegion:
+    Type: String
+    Description: AWS region for S3 and SDK
+    Default: ap-south-1
+
+  AWSAccessKeyId:
+    Type: String
+    Description: AWS Access Key ID
+    NoEcho: true
+
+  AWSSecretAccessKey:
+    Type: String
+    Description: AWS Secret Access Key
+    NoEcho: true
+
+Resources:
+  # ECS Cluster
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: bell-streaming-cluster
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Tags:
+        - Key: Name
+          Value: bell-streaming-ecs-cluster
+
+  # Application Load Balancer
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: bell-streaming-alb
+      Scheme: internet-facing
+      Type: application
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !Ref ALBSecurityGroupId
+      Tags:
+        - Key: Name
+          Value: bell-streaming-alb
+
+  # Target Groups
+  NginxTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: bell-nginx-tg
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VPCId
+      TargetType: ip
+      HealthCheckEnabled: true
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+
+  # ALB Listener
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref NginxTargetGroup
+
+  # CloudWatch Log Groups
+  AuthServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/auth-service
+      RetentionInDays: 7
+
+  VideoMetadataLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/video-metadata-service
+      RetentionInDays: 7
+
+  VideoUploadLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/video-upload-service
+      RetentionInDays: 7
+
+  StreamingServiceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/streaming-service
+      RetentionInDays: 7
+
+  ThumbnailGeneratorLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/thumbnail-generator
+      RetentionInDays: 7
+
+  NginxLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/nginx
+      RetentionInDays: 7
+
+  CloudflaredLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /ecs/bell-streaming/cloudflared
+      RetentionInDays: 7
+
+  # ECS Task Execution Role
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+      Policies:
+        - PolicyName: ECSSecretsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - kms:Decrypt
+                Resource: '*'
+
+  # ECS Task Role (for application runtime permissions)
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - arn:aws:s3:::*
+                  - arn:aws:s3:::*/*
+
+  # Task Definitions
+  AuthServiceTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-auth-service
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: auth-service
+          Image: !Sub '${DockerHubUsername}/bell-auth-service:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3001
+              Protocol: tcp
+          Environment:
+            - Name: PORT
+              Value: '3001'
+            - Name: NODE_ENV
+              Value: production
+            - Name: MONGODB_URI
+              Value: !Ref MongoDBURI
+            - Name: JWT_SECRET
+              Value: !Ref JWTSecret
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AuthServiceLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  VideoMetadataTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-video-metadata-service
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: video-metadata-service
+          Image: !Sub '${DockerHubUsername}/bell-video-metadata-service:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3002
+              Protocol: tcp
+          Environment:
+            - Name: PORT
+              Value: '3002'
+            - Name: NODE_ENV
+              Value: production
+            - Name: MONGODB_URI
+              Value: !Ref MongoDBURI
+            - Name: JWT_SECRET
+              Value: !Ref JWTSecret
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref VideoMetadataLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  StreamingServiceTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-streaming-service
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: streaming-service
+          Image: !Sub '${DockerHubUsername}/bell-streaming-service:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3003
+              Protocol: tcp
+          Environment:
+            - Name: PORT
+              Value: '3003'
+            - Name: NODE_ENV
+              Value: production
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref StreamingServiceLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  VideoUploadTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-video-upload-service
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: video-upload-service
+          Image: !Sub '${DockerHubUsername}/bell-video-upload-service:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 3004
+              Protocol: tcp
+          Environment:
+            - Name: PORT
+              Value: '3004'
+            - Name: NODE_ENV
+              Value: production
+            - Name: AWS_REGION
+              Value: !Ref AWSRegion
+            - Name: AWS_ACCESS_KEY_ID
+              Value: !Ref AWSAccessKeyId
+            - Name: AWS_SECRET_ACCESS_KEY
+              Value: !Ref AWSSecretAccessKey
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref VideoUploadLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  ThumbnailGeneratorTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-thumbnail-generator
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '512'
+      Memory: '1024'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: thumbnail-generator
+          Image: !Sub '${DockerHubUsername}/bell-thumbnail-generator:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 8080
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref ThumbnailGeneratorLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  NginxTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-nginx
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: nginx
+          Image: !Sub '${DockerHubUsername}/bell-nginx:${ImageTag}'
+          Essential: true
+          PortMappings:
+            - ContainerPort: 80
+              Protocol: tcp
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref NginxLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  CloudflaredTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: bell-cloudflared
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      ContainerDefinitions:
+        - Name: cloudflared
+          Image: cloudflare/cloudflared:latest
+          Essential: true
+          Command:
+            - tunnel
+            - --no-autoupdate
+            - run
+          Environment:
+            - Name: TUNNEL_TOKEN
+              Value: !Ref CloudflareTunnelToken
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref CloudflaredLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+
+  # ECS Services
+  AuthService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: auth-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref AuthServiceTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+  VideoMetadataService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: video-metadata-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref VideoMetadataTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+  StreamingService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: streaming-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref StreamingServiceTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+  VideoUploadService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: video-upload-service
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref VideoUploadTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+  ThumbnailGeneratorService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: thumbnail-generator
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref ThumbnailGeneratorTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+  NginxService:
+    Type: AWS::ECS::Service
+    DependsOn: ALBListener
+    Properties:
+      ServiceName: nginx
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref NginxTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+      LoadBalancers:
+        - ContainerName: nginx
+          ContainerPort: 80
+          TargetGroupArn: !Ref NginxTargetGroup
+
+  CloudflaredService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: cloudflared
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref CloudflaredTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !Ref SecurityGroupId
+
+Outputs:
+  ClusterName:
+    Value: !Ref ECSCluster
+    Export:
+      Name: !Sub '${AWS::StackName}-ClusterName'
+
+  LoadBalancerDNS:
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerDNS'

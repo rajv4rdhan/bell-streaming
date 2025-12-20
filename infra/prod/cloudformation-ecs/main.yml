@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Bell Streaming Platform - ECS Stack'
+
+Parameters:
+  DockerHubUsername:
+    Type: String
+    Description: Docker Hub username
+    Default: rajv4rdhan
+  
+  ImageTag:
+    Type: String
+    Description: Docker image tag
+    Default: latest
+  
+  DopplerToken:
+    Type: String
+    Description: Doppler service token
+    NoEcho: true
+  
+  MongoDBURI:
+    Type: String
+    Description: MongoDB connection string
+    NoEcho: true
+  
+  JWTSecret:
+    Type: String
+    Description: JWT secret key
+    NoEcho: true
+  
+  CloudflareTunnelToken:
+    Type: String
+    Description: Cloudflare tunnel token
+    NoEcho: true
+
+  AWSRegion:
+    Type: String
+    Description: AWS region for S3 and SDK
+    Default: ap-south-1
+
+  AWSAccessKeyId:
+    Type: String
+    Description: AWS Access Key ID
+    NoEcho: true
+
+  AWSSecretAccessKey:
+    Type: String
+    Description: AWS Secret Access Key
+    NoEcho: true
+
+Resources:
+  NetworkStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/ecs/network.yml'
+      Tags:
+        - Key: Name
+          Value: bell-streaming-ecs-network
+
+  SecurityStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: NetworkStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/ecs/security.yml'
+      Parameters:
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+      Tags:
+        - Key: Name
+          Value: bell-streaming-ecs-security
+
+  ECSStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn:
+      - NetworkStack
+      - SecurityStack
+    Properties:
+      TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/ecs/ecs-cluster.yml'
+      Parameters:
+        VPCId: !GetAtt NetworkStack.Outputs.VPCId
+        PublicSubnet1: !GetAtt NetworkStack.Outputs.PublicSubnet1Id
+        PublicSubnet2: !GetAtt NetworkStack.Outputs.PublicSubnet2Id
+        SecurityGroupId: !GetAtt SecurityStack.Outputs.ECSSecurityGroupId
+        ALBSecurityGroupId: !GetAtt SecurityStack.Outputs.ALBSecurityGroupId
+        DockerHubUsername: !Ref DockerHubUsername
+        ImageTag: !Ref ImageTag
+        MongoDBURI: !Ref MongoDBURI
+        JWTSecret: !Ref JWTSecret
+        CloudflareTunnelToken: !Ref CloudflareTunnelToken
+        AWSRegion: !Ref AWSRegion
+        AWSAccessKeyId: !Ref AWSAccessKeyId
+        AWSSecretAccessKey: !Ref AWSSecretAccessKey
+      Tags:
+        - Key: Name
+          Value: bell-streaming-ecs-cluster
+
+Outputs:
+  ClusterName:
+    Description: ECS Cluster Name
+    Value: !GetAtt ECSStack.Outputs.ClusterName
+  
+  LoadBalancerDNS:
+    Description: Application Load Balancer DNS
+    Value: !GetAtt ECSStack.Outputs.LoadBalancerDNS
+  
+  LoadBalancerURL:
+    Description: Application URL
+    Value: !Sub 'http://${ECSStack.Outputs.LoadBalancerDNS}'
