@@ -234,8 +234,9 @@ services:
     image: containrrr/watchtower:latest
     environment:
       - TZ=UTC
+      - DOCKER_API_VERSION=1.44
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=300
+      - WATCHTOWER_POLL_INTERVAL=30
       - WATCHTOWER_INCLUDE_RESTARTING=true
       - WATCHTOWER_INCLUDE_STOPPED=false
       - WATCHTOWER_REVIVE_STOPPED=false

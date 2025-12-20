@@ -20,7 +20,7 @@ export const DashboardPage = () => {
 
   const totalVideos = videos?.total || 0;
   const totalViews = videos?.videos?.reduce((sum: number, v: any) => sum + (v.views || 0), 0) || 0;
-  const publicVideos = videos?.videos?.filter((v: any) => v.visibility === 'public').length || 0;
+  const publicVideos = videos?.videos?.filter((v: any) => v.visibility === '-public').length || 0;
   const completedVideos = videos?.videos?.filter(v => v.uploadStatus === 'completed').length || 0;
 
   const statCards = [
