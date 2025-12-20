@@ -8,7 +8,7 @@ COPY packages/admin-ui/package*.json ./packages/admin-ui/
 COPY packages/shared-ui/package*.json ./packages/shared-ui/
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --legacy-peer-deps --quiet
 
 # Copy entire project (source code, configs, etc.)
 COPY . .
@@ -19,7 +19,7 @@ RUN npm run build
 
 # Build the application
 WORKDIR /app/packages/admin-ui
-RUN npm run build
+RUN npm run build:docker
 
 # Runtime stage
 FROM nginx:alpine
