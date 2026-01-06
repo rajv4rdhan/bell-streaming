@@ -89,9 +89,9 @@ export const VideosPage = () => {
                   <div className="flex-shrink-0 w-48 h-28 relative bg-zinc-100 rounded-md overflow-hidden">
                     {video.thumbnailUrl ? (
                       <img
-                        src={video.thumbnailUrl.startsWith(import.meta.env.VITE_CLOUDFRONT_URL)
+                        src={video.thumbnailUrl.startsWith('https://d1d410bjpcuiwb.cloudfront.net')
                           ? video.thumbnailUrl
-                          : `${import.meta.env.VITE_CLOUDFRONT_URL}/${video.thumbnailUrl.replace(/^\//, '')}`}
+                          : `https://d1d410bjpcuiwb.cloudfront.net/${video.thumbnailUrl.replace(/^\//, '')}`}
                         alt={video.title}
                         className="w-full h-full object-cover"
                       />
@@ -209,7 +209,9 @@ export const VideosPage = () => {
           <div className="space-y-6">
             {selectedVideo.s3Key ? (
               <PremiumVideoPlayer
-                url={`${import.meta.env.VITE_CLOUDFRONT_URL}/${selectedVideo.s3Key}`}
+                url={selectedVideo.s3Key.startsWith('http') 
+                  ? selectedVideo.s3Key 
+                  : `https://d1d410bjpcuiwb.cloudfront.net/${selectedVideo.s3Key.replace(/^\//, '')}`}
                 poster={selectedVideo.thumbnailUrl}
               />
             ) : (
