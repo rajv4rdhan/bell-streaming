@@ -1,5 +1,7 @@
 package com.bellstreaming.thumbnailgenerator.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,6 +14,7 @@ import java.util.Map;
 @Service
 public class FreepikService {
 
+    private static final Logger log = LoggerFactory.getLogger(FreepikService.class);
     private final WebClient webClient;
 
     @Value("${freepik.api.key}")
@@ -25,6 +28,9 @@ public class FreepikService {
     }
 
     public Mono<String> generateImage(String videoId, String prompt, String webhookUrl) {
+        log.info("New thumbnail generation request received - videoId: {}, prompt: '{}', webhookUrl: {}", 
+                videoId, prompt, webhookUrl);
+        
         Map<String, Object> body = Map.of(
                 "prompt", prompt,
                 "prompt_upsampling", false,

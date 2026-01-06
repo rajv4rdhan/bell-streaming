@@ -1,0 +1,40 @@
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "GET",
+            "PUT",
+            "POST",
+            "HEAD",
+            "DELETE"
+        ],
+        "AllowedOrigins": [
+            "https://admin.bell.tuneloom.cfd",
+            "https://bell.tuneloom.cfd",
+            "http://admin.bell.tuneloom.cfd",
+            "http://bell.tuneloom.cfd",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:4200",
+            "http://localhost:5000",
+            "http://localhost:5173",
+            "http://localhost:8081",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
+            "http://127.0.0.1:4200",
+            "http://127.0.0.1:5000",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:8081"
+        ],
+        "ExposeHeaders": [
+            "ETag",
+            "x-amz-request-id",
+            "x-amz-id-2",
+            "x-amz-server-side-encryption",
+            "x-amz-version-id"
+        ],
+        "MaxAgeSeconds": 3000
+    }
+]

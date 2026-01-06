@@ -211,7 +211,7 @@ export const VideosPage = () => {
               <PremiumVideoPlayer
                 url={selectedVideo.s3Key.startsWith('http') 
                   ? selectedVideo.s3Key 
-                  : `https://d1d410bjpcuiwb.cloudfront.net/${selectedVideo.s3Key.replace(/^\//, '')}`}
+                  : `https://d1d410bjpcuiwb.cloudfront.net/${selectedVideo.s3Key.replace(/^\//, '').toLowerCase()}`}
                 poster={selectedVideo.thumbnailUrl}
               />
             ) : (
