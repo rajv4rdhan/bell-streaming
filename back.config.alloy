@@ -107,10 +107,6 @@ prometheus.scrape "services" {
       "__address__" = "streaming-service:3003",
       "job"         = "streaming-service",
     },
-    {
-      "__address__" = "thumbnail-generator:8080",
-      "job"         = "thumbnail-generator",
-    },
   ]
   
   scrape_interval = "15s"

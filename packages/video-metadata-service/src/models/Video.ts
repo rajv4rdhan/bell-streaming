@@ -12,13 +12,6 @@ export enum UploadStatus {
   FAILED = 'failed',
 }
 
-export enum ThumbnailStatus {
-  PENDING = 'pending',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-}
-
 export interface IVideo extends Document {
   title: string;
   description?: string;
@@ -32,9 +25,7 @@ export interface IVideo extends Document {
   categories: string[];
   language?: string;
   releaseDate?: Date;
-  promptForThumbnail?: string; // extra field for thumbnail prompt
   thumbnailUrl?: string;
-  thumbnailStatus?: ThumbnailStatus;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -60,18 +51,12 @@ const videoSchema = new Schema<IVideo>(
     categories: { type: [String], default: [] },
     language: { type: String },
     releaseDate: { type: Date },
-    promptForThumbnail: { type: String },
     thumbnailUrl: { type: String, default: DEFAULT_THUMBNAIL },
     uploadStatus: {
       type: String,
       enum: Object.values(UploadStatus),
       default: UploadStatus.PENDING,
       index: true,
-    thumbnailStatus: {
-      type: String,
-      enum: Object.values(ThumbnailStatus),
-      default: ThumbnailStatus.PENDING,
-    },
     },
   },
   { timestamps: true }

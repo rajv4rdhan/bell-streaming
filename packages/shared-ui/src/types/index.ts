@@ -23,9 +23,7 @@ export interface Video {
   uploadedAt?: string;
   createdBy: string;
   uploadStatus: 'pending' | 'uploading' | 'completed' | 'failed';
-  thumbnailStatus?: 'pending' | 'in_progress' | 'completed' | 'failed';
   visibility: 'public' | 'private';
-  promptForThumbnail?: string;
   s3Key?: string;
   size?: number;
   createdAt?: string;
@@ -96,7 +94,6 @@ export interface CreateVideoRequest {
   title: string;
   description: string;
   tags?: string[];
-  promptForThumbnail?: string;
 }
 
 export interface UpdateVideoRequest {

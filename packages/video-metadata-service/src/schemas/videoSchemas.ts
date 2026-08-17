@@ -9,7 +9,6 @@ export const videoBaseSchema = z.object({
   durationSeconds: z.number().int().positive().optional(),
   language: z.string().max(20).optional(),
   releaseDate: z.string().datetime().optional(),
-  promptForThumbnail: z.string().max(500).optional(),
 });
 
 export const updateVideoSchema = z.object({
@@ -24,7 +23,6 @@ export const updateVideoSchema = z.object({
     durationSeconds: z.number().int().positive().optional(),
     language: z.string().max(20).optional(),
     releaseDate: z.string().datetime().optional(),
-    promptForThumbnail: z.string().max(500).optional(),
   }).refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided for update',
   }),

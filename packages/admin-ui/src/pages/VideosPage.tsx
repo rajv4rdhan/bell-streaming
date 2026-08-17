@@ -128,17 +128,6 @@ export const VideosPage = () => {
                         {video.uploadStatus}
                       </span>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
-                        video.thumbnailStatus === 'completed'
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : video.thumbnailStatus === 'in_progress'
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : video.thumbnailStatus === 'failed'
-                          ? 'bg-red-50 text-red-700 border-red-200'
-                          : 'bg-zinc-50 text-zinc-700 border-zinc-200'
-                      }`}>
-                        Thumbnail
-                      </span>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
                         video.visibility === 'public'
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'bg-zinc-50 text-zinc-700 border-zinc-200'
@@ -252,10 +241,6 @@ export const VideosPage = () => {
                 <div>
                   <p className="text-xs text-zinc-500 mb-1">Upload Status</p>
                   <p className="font-medium text-zinc-900 capitalize">{selectedVideo.uploadStatus}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-zinc-500 mb-1">Thumbnail Status</p>
-                  <p className="font-medium text-zinc-900 capitalize">{selectedVideo.thumbnailStatus?.replace('_', ' ')}</p>
                 </div>
                 <div>
                   <p className="text-xs text-zinc-500 mb-1">Visibility</p>

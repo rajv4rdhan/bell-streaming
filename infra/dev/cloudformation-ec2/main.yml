@@ -2,10 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Bell Streaming Platform - Main Stack'
 
 Parameters:
-  KeyName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: Select existing EC2 Key Pair
-  
   GitHubPAT:
     Type: String
     Description: GitHub Personal Access Token
@@ -54,7 +50,6 @@ Resources:
     Properties:
       TemplateURL: !Sub 'https://s3.amazonaws.com/bell-streaming-cfn-templates/cloudformation/compute.yml'
       Parameters:
-        KeyName: !Ref KeyName
         SubnetId: !GetAtt NetworkStack.Outputs.PublicSubnetId
         SecurityGroupId: !GetAtt SecurityStack.Outputs.SecurityGroupId
         GitHubPAT: !Ref GitHubPAT

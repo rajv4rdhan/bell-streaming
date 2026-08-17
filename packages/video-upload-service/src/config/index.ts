@@ -32,7 +32,7 @@ export const config = {
     allowedExtensions: ['.mp4', '.mov', '.avi', '.webm', '.mkv', '.mpeg', '.mpg'],
   },
   cors: {
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://admin.bell.tuneloom.cfd'],
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://admin.bell.certifica.in'],
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),

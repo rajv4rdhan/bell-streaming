@@ -19,7 +19,6 @@ export const UploadPage = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
-  const [thumbnailPrompt, setThumbnailPrompt] = useState('');
   const [file, setFile] = useState<File | null>(null);
   
   // Upload state
@@ -41,7 +40,6 @@ export const UploadPage = () => {
     setTitle('');
     setDescription('');
     setTags('');
-    setThumbnailPrompt('');
     setFile(null);
     setCurrentStep('metadata');
     setUploadProgress(0);
@@ -63,7 +61,6 @@ export const UploadPage = () => {
       title,
       description,
       tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-      promptForThumbnail: thumbnailPrompt || undefined,
     }),
     onSuccess: (response: any) => {
       const id = response.data.video._id;
@@ -297,12 +294,6 @@ export const UploadPage = () => {
               value={tags}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTags(e.target.value)}
               placeholder="e.g., tech, tutorial, javascript"
-            />
-            <Input
-              label="Thumbnail Prompt (Optional)"
-              value={thumbnailPrompt}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setThumbnailPrompt(e.target.value)}
-              placeholder="e.g., A futuristic cityscape at sunset"
             />
             <Button
               type="submit"

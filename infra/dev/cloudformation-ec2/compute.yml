@@ -2,9 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EC2 Instance for Bell Streaming Platform'
 
 Parameters:
-  KeyName:
-    Type: AWS::EC2::KeyPair::KeyName
-  
   SubnetId:
     Type: String
   
@@ -14,6 +11,7 @@ Parameters:
   GitHubPAT:
     Type: String
     NoEcho: true
+    Default: "none"
   
   GitHubRepo:
     Type: String
@@ -28,12 +26,17 @@ Parameters:
     NoEcho: true
 
 Resources:
+  StreamingKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: !Sub '${AWS::StackName}-ssh-key'
+
   EC2Instance:
     Type: AWS::EC2::Instance
     Properties:
       ImageId: ami-0ecb62995f68bb549
       InstanceType: t3.medium
-      KeyName: !Ref KeyName
+      KeyName: !Ref StreamingKeyPair
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - !Ref SecurityGroupId
@@ -74,7 +77,7 @@ Resources:
           # Clone repository
           mkdir -p /app
           cd /app
-          git clone https://rajv4rdhan:${GitHubPAT}@github.com/${GitHubRepo}.git bell-streaming
+          git clone https://github.com/${GitHubRepo}.git bell-streaming
           cd /app/bell-streaming
           git checkout ${GitHubBranch}
           

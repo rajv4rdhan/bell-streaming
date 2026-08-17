@@ -55,8 +55,6 @@ Deploys infrastructure to AWS using CloudFormation.
 - `AWS_S3_ACCESS_KEY_ID` - AWS access key for S3 (application)
 - `AWS_S3_SECRET_ACCESS_KEY` - AWS secret key for S3 (application)
 - `S3_BUCKET_NAME` - S3 bucket for video storage
-- `FREEPIK_API_KEY` - Freepik API key (optional)
-- `WEBHOOK_URL` - Webhook URL (optional)
 
 **Manual Trigger:**
 ```bash

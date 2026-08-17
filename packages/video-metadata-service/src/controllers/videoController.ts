@@ -3,11 +3,10 @@ import { Video, VideoStats, VisibilityStatus, UploadStatus } from '../models';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { CreateVideoInput, SetVisibilityInput, UpdateVideoInput, UpdateUploadStatusInput } from '../schemas';
-import { thumbnailGeneratorService } from '../services';
 
 export const createVideo = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { title, description, tags, categories, durationSeconds, language, releaseDate, promptForThumbnail } =
+    const { title, description, tags, categories, durationSeconds, language, releaseDate } =
       req.body as CreateVideoInput;
 
     if (!title) throw new AppError('Title is required', 400);
@@ -30,24 +29,9 @@ export const createVideo = async (req: AuthRequest, res: Response, next: NextFun
       durationSeconds,
       language,
       releaseDate,
-      promptForThumbnail,
     });
 
     await VideoStats.create({ videoId: video._id });
-
-    // Send thumbnail generation request if prompt is provided
-    if (promptForThumbnail) {
-      const webhookUrl = `${process.env.PUBLIC_URL}/api/admin/videos/webhook/${video._id}`;
-      
-      // Fire and forget - don't wait for thumbnail generation
-      thumbnailGeneratorService.generateThumbnail(
-        video._id.toString(),
-        promptForThumbnail,
-        webhookUrl
-      ).catch(err => {
-        console.error('Failed to trigger thumbnail generation:', err);
-      });
-    }
 
     res.status(201).json({
       message: 'Video metadata created',

@@ -351,7 +351,6 @@ if (uploadResponse.ok) {
 - [ ] Multipart upload support for large files
 - [ ] Upload progress tracking via WebSockets
 - [ ] Video transcoding pipeline (AWS MediaConvert)
-- [ ] Thumbnail generation (AWS Lambda + FFmpeg)
 - [ ] CDN integration (CloudFront)
 - [ ] Upload resume capability
 - [ ] Webhook notifications on upload completion

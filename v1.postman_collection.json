@@ -238,7 +238,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"title\": \"My First Video\",\r\n  \"description\": \"Introduction to microservices\",\r\n  \"tags\": [\"tech\", \"tutorial\"],\r\n  \"promptForThumbnail\": \"A modern microservices architecture diagram\"\r\n}",
+							"raw": "{\r\n  \"title\": \"My First Video\",\r\n  \"description\": \"Introduction to microservices\",\r\n  \"tags\": [\"tech\", \"tutorial\"]\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"

@@ -119,7 +119,7 @@ export const confirmUpload = async (
     }
 
     // TODO: Here you would trigger the next step, e.g., sending a message
-    // to a queue for the thumbnail generator and video processing service.
+    // to a queue for the video processing service.
 
     res.status(200).json({ message: 'Upload confirmed and video is processing.' });
   } catch (error) {

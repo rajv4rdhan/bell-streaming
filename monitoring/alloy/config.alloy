@@ -68,7 +68,6 @@ prometheus.scrape "services" {
     { "__address__" = "video-upload-service:3004", "job" = "video-upload-service" },
     { "__address__" = "video-metadata-service:3002", "job" = "video-metadata-service" },
     { "__address__" = "streaming-service:3003", "job" = "streaming-service" },
-    { "__address__" = "thumbnail-generator:8080", "job" = "thumbnail-generator" },
   ]
   scrape_interval = "15s"
   metrics_path    = "/metrics"

@@ -8,7 +8,6 @@ Admin-only microservice for complete video metadata management: create, read, up
 - 🔐 Manage visibility: public/private
 - 📊 Track upload status: pending/uploading/completed/failed
 - 📈 View video statistics (views, likes, dislikes, comments)
-- 🎨 Thumbnail prompt field for AI generation
 - 🔒 Modular schemas with Zod validation
 - 🛡️ Security: Helmet, CORS, rate limiting
 
@@ -25,7 +24,7 @@ This service handles **metadata only**. A separate upload service will:
 - `visibility`: `private` | `public`
 - `uploadStatus`: `pending` | `uploading` | `completed` | `failed`
 - `tags`, `categories`, `language`, `durationSeconds`
-- `releaseDate`, `promptForThumbnail`
+- `releaseDate`
 
 ### VideoStats
 - `videoId`, `views`, `likes`, `dislikes`, `commentsCount`, `lastViewedAt`
@@ -58,8 +57,7 @@ All routes require **Admin** role. Base path: `/api/videos`
     "tags": ["tutorial", "tech"],
     "categories": ["Education"],
     "durationSeconds": 300,
-    "language": "en",
-    "promptForThumbnail": "Generate a tech thumbnail"
+    "language": "en"
   }
   ```
 

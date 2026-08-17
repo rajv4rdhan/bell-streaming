@@ -11,7 +11,6 @@ services:
       - video-metadata-service
       - video-upload-service
       - streaming-service
-      - thumbnail-generator
       - admin-ui
     labels:
       logging: "alloy"
@@ -58,7 +57,7 @@ services:
       context: .
       dockerfile: packages/admin-ui/Dockerfile
       args:
-        VITE_API_BASE_URL: http://bell.tuneloom.cfd/api
+        VITE_API_BASE_URL: http://bell.certifica.in/api
         VITE_CLOUDFRONT_URL: https://drmcv4972t1k7.cloudfront.net
     image: rajv4rdhan/bell-streaming-admin-ui:latest
     environment:
@@ -129,19 +128,6 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
-    labels:
-      logging: "alloy"
-
-  thumbnail-generator:
-    container_name: thumbnail-generator
-    image: rajv4rdhan/bell-streaming-thumbnail-generator:latest
-    dns:
-      - 172.19.2.254
-      - 8.8.4.4
-    environment:
-      - TZ=UTC
-      - FREEPIK_API_KEY=${FREEPIK_API_KEY}
-      - WEBHOOK_URL=${WEBHOOK_URL}
     labels:
       logging: "alloy"
 

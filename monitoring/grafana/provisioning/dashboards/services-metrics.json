@@ -102,7 +102,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "container_memory_usage_bytes{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service|thumbnail-generator\"}",
+          "expr": "container_memory_usage_bytes{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service\"}",
           "refId": "A",
           "legendFormat": "{{container_name}}"
         }
@@ -191,7 +191,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(container_network_receive_bytes_total{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service|thumbnail-generator\"}[5m])",
+          "expr": "rate(container_network_receive_bytes_total{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service\"}[5m])",
           "refId": "A",
           "legendFormat": "{{container_name}} - RX"
         },
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "rate(container_network_transmit_bytes_total{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service|thumbnail-generator\"}[5m])",
+          "expr": "rate(container_network_transmit_bytes_total{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service\"}[5m])",
           "refId": "B",
           "legendFormat": "{{container_name}} - TX"
         }
@@ -289,7 +289,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "container_fs_usage_bytes{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service|thumbnail-generator\"}",
+          "expr": "container_fs_usage_bytes{container_name=~\"auth-service|video-metadata-service|video-upload-service|streaming-service\"}",
           "refId": "A",
           "legendFormat": "{{container_name}}"
         }

@@ -18,7 +18,6 @@ This project is managed as a monorepo using npm workspaces and Nx, divided into 
 - **Video Metadata Service**: Handles video details, search, and categorization (Node.js).
 - **Video Upload Service**: Manages video ingestion and raw file storage (Node.js).
 - **Streaming Service**: Delivers video content to clients (Node.js).
-- **Thumbnail Generator**: Automatically extracts thumbnails from uploaded videos (Java / Spring Boot).
 - **API Gateway**: Nginx reverse proxy and load balancer.
 
 ### Infrastructure & DevOps 🚀
@@ -49,7 +48,6 @@ bellStreaming/
 │   ├── frontend-ui/
 │   ├── shared-ui/
 │   ├── streaming-service/
-│   ├── thumbnail-generator/
 │   ├── video-metadata-service/
 │   └── video-upload-service/
 ├── scripts/              # Build and deployment utilities
@@ -61,7 +59,6 @@ bellStreaming/
 
 ### Prerequisites
 - Node.js (v18+)
-- Java 17+ & Maven (for `thumbnail-generator`)
 - Docker & Docker Compose
 
 ### Setup

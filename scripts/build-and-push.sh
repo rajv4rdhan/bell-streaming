@@ -42,13 +42,6 @@ docker build -f packages/streaming-service/Dockerfile -t $DOCKER_USERNAME/bell-s
 echo "⬆️  Pushing streaming-service..."
 docker push $DOCKER_USERNAME/bell-streaming-streaming-service:$VERSION
 
-# Build and push thumbnail-generator
-echo ""
-echo "📦 Building thumbnail-generator..."
-docker build -f packages/thumbnail-generator/Dockerfile -t $DOCKER_USERNAME/bell-streaming-thumbnail-generator:$VERSION .
-echo "⬆️  Pushing thumbnail-generator..."
-docker push $DOCKER_USERNAME/bell-streaming-thumbnail-generator:$VERSION
-
 # Build and push admin-ui
 echo ""
 echo "📦 Building admin-ui..."
@@ -80,7 +73,6 @@ echo "  - $DOCKER_USERNAME/bell-streaming-auth-service:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-video-metadata-service:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-video-upload-service:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-streaming-service:$VERSION"
-echo "  - $DOCKER_USERNAME/bell-streaming-thumbnail-generator:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-admin-ui:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-frontend-ui:$VERSION"
 echo "  - $DOCKER_USERNAME/bell-streaming-nginx:$VERSION"

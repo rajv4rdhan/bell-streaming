@@ -18,7 +18,6 @@ This directory contains AWS CloudFormation templates for deploying the Bell Stre
    - `{username}/bell-video-metadata-service:latest`
    - `{username}/bell-video-upload-service:latest`
    - `{username}/bell-streaming-service:latest`
-   - `{username}/bell-thumbnail-generator:latest`
    - `{username}/bell-nginx:latest`
 
 3. **Environment Secrets**:
@@ -40,7 +39,6 @@ docker build -f packages/auth-service/Dockerfile -t {username}/bell-auth-service
 docker build -f packages/video-metadata-service/Dockerfile -t {username}/bell-video-metadata-service:latest .
 docker build -f packages/video-upload-service/Dockerfile -t {username}/bell-video-upload-service:latest .
 docker build -f packages/streaming-service/Dockerfile -t {username}/bell-streaming-service:latest .
-docker build -f packages/thumbnail-generator/Dockerfile -t {username}/bell-thumbnail-generator:latest .
 docker build -f nginx/Dockerfile -t {username}/bell-nginx:latest .
 
 # Push images
@@ -48,7 +46,6 @@ docker push {username}/bell-auth-service:latest
 docker push {username}/bell-video-metadata-service:latest
 docker push {username}/bell-video-upload-service:latest
 docker push {username}/bell-streaming-service:latest
-docker push {username}/bell-thumbnail-generator:latest
 docker push {username}/bell-nginx:latest
 ```
 
@@ -107,9 +104,8 @@ aws cloudformation describe-stacks \
 2. **video-metadata-service** (Port 3002)
 3. **streaming-service** (Port 3003)
 4. **video-upload-service** (Port 3004)
-5. **thumbnail-generator** (Port 8080)
-6. **nginx** (Port 80) - Frontend proxy
-7. **cloudflared** - Cloudflare tunnel
+5. **nginx** (Port 80) - Frontend proxy
+6. **cloudflared** - Cloudflare tunnel
 
 ## Cost Optimization
 
