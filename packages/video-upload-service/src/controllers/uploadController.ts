@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { s3Service, videoMetadataService } from '../services';
+import { s3Service, videoMetadataService, kafkaService } from '../services';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { GeneratePresignedUrlInput, ConfirmUploadInput, UploadFailedInput } from '../schemas';
@@ -118,8 +118,21 @@ export const confirmUpload = async (
       throw statusError;
     }
 
-    // TODO: Here you would trigger the next step, e.g., sending a message
-    // to a queue for the video processing service.
+    // Publish upload event to Kafka for downstream consumers (e.g., processing service)
+    console.log('[confirmUpload] Publishing video.uploaded event to Kafka for videoId:', videoId);
+    try {
+      await kafkaService.publishVideoUploaded({
+        videoId,
+        s3Key,
+        userId,
+        size: fileMetadata.size,
+        contentType: fileMetadata.contentType,
+      });
+      console.log('[confirmUpload] video.uploaded event published successfully');
+    } catch (kafkaError) {
+      // Upload is already confirmed; do not fail the request if Kafka is unavailable.
+      console.error('[confirmUpload] Failed to publish video.uploaded event:', kafkaError);
+    }
 
     res.status(200).json({ message: 'Upload confirmed and video is processing.' });
   } catch (error) {

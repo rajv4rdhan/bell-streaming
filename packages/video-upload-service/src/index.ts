@@ -1,6 +1,7 @@
 import { createApp } from './app';
 import { config } from './config';
 import { uploadMonitor } from './services/uploadMonitor';
+import { kafkaService } from './services/kafkaService';
 
 const startServer = async (): Promise<void> => {
   try {
@@ -19,6 +20,7 @@ const startServer = async (): Promise<void> => {
     const gracefulShutdown = async (signal: string) => {
       console.log(`\n${signal} received. Shutting down...`);
       uploadMonitor.stop();
+      await kafkaService.disconnect();
       server.close(() => {
         console.log('✅ Graceful shutdown completed');
         process.exit(0);

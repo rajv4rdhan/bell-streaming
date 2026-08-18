@@ -38,4 +38,9 @@ export const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '20'),
   },
+  kafka: {
+    brokers: process.env.KAFKA_BROKERS?.split(',').map((b) => b.trim()) || ['localhost:9092'],
+    clientId: process.env.KAFKA_CLIENT_ID || 'video-upload-service',
+    topic: process.env.KAFKA_TOPIC || 'video-uploads',
+  },
 };
