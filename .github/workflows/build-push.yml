@@ -2,9 +2,9 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    # branches:
+    #   - main
+    #   - develop
     paths:
       - 'packages/**'
       - 'nginx/**'
