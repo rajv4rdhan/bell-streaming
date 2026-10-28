@@ -23,6 +23,9 @@ spec:
             name: app-config
         - secretRef:
             name: app-secrets
+        env:
+        - name: VIDEO_METADATA_SERVICE_URL
+          value: "http://video-metadata-service:3002/api/admin/videos"
 ---
 apiVersion: v1
 kind: Service
