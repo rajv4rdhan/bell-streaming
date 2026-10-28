@@ -1,0 +1,207 @@
+# Local development stack with its own MongoDB and MinIO instance.
+# It intentionally excludes the monitoring stack, Cloudflare tunnel, and
+# watchtower services from the production compose files.
+#
+# Usage:
+#   docker compose -f docker-compose.local.yml up --build -d
+#   docker compose -f docker-compose.local.yml down
+#   docker compose -f docker-compose.local.yml down -v   # reset data
+#
+# The official minio/minio Docker Hub repository is no longer published, so
+# this stack uses the elestio/minio packaging, which ships the same MinIO
+# server and the mc client.
+#
+# The first admin account can be created with:
+#   curl -X POST http://localhost:8081/api/auth/register \
+#     -H 'Content-Type: application/json' \
+#     -d '{"email":"admin@example.com","password":"SecurePass123!","firstName":"Admin","lastName":"User","role":"admin"}'
+
+services:
+  mongo:
+    image: mongo:7
+    environment:
+      MONGO_INITDB_DATABASE: bell-streaming
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  minio:
+    image: elestio/minio:latest
+    command: server /data --address "0.0.0.0:9000" --console-address "0.0.0.0:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: elestio/minio:latest
+    depends_on:
+      - minio
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        until mc alias set local http://minio:9000 minioadmin minioadmin; do
+          echo "Waiting for MinIO..."
+          sleep 1
+        done
+        mc mb --ignore-existing local/bell-streaming-videos
+        mc anonymous set download local/bell-streaming-videos
+        echo "MinIO bucket is ready"
+    restart: "no"
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: packages/auth-service/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/bell-streaming
+      JWT_SECRET: local-dev-jwt-secret
+      JWT_REFRESH_SECRET: local-dev-refresh-secret
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      BCRYPT_SALT_ROUNDS: 10
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8081
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  video-metadata-service:
+    build:
+      context: .
+      dockerfile: packages/video-metadata-service/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3002
+      MONGODB_URI: mongodb://mongo:27017/bell-streaming
+      JWT_SECRET: local-dev-jwt-secret
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8081
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+      S3_BUCKET_NAME: bell-streaming-videos
+      S3_VIDEO_KEY_PREFIX: videos
+      DEFAULT_THUMBNAIL_URL: ""
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  video-upload-service:
+    build:
+      context: .
+      dockerfile: packages/video-upload-service/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3004
+      VIDEO_METADATA_SERVICE_URL: http://video-metadata-service:3002/api/admin/videos
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      S3_BUCKET_NAME: bell-streaming-videos
+      S3_VIDEO_KEY_PREFIX: videos
+      S3_PRESIGNED_URL_EXPIRATION: 900
+      S3_ENDPOINT: http://minio:9000
+      S3_FORCE_PATH_STYLE: "true"
+      S3_PUBLIC_ENDPOINT: http://localhost:8081/storage
+      S3_PUBLIC_BASE_URL: http://localhost:8081/storage/bell-streaming-videos
+      JWT_SECRET: local-dev-jwt-secret
+      MAX_FILE_SIZE_MB: 500
+      ALLOWED_VIDEO_TYPES: video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm,video/x-matroska
+      ALLOWED_VIDEO_EXTENSIONS: .mp4,.mov,.avi,.webm,.mkv,.mpeg,.mpg
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8081
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 20
+      UPLOAD_TIMEOUT_MS: 1800000
+      UPLOAD_MONITOR_INTERVAL_MS: 300000
+      KAFKA_ENABLED: "false"
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+      video-metadata-service:
+        condition: service_started
+    restart: unless-stopped
+
+  streaming-service:
+    build:
+      context: .
+      dockerfile: packages/streaming-service/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 3003
+      VIDEO_METADATA_SERVICE_URL: http://video-metadata-service:3002
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:5174,http://localhost:8081
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+    depends_on:
+      video-metadata-service:
+        condition: service_started
+    restart: unless-stopped
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:3001
+      STREAMING_SERVICE_URL: http://streaming-service:3003
+      VIDEO_METADATA_SERVICE_URL: http://video-metadata-service:3002
+      VIDEO_UPLOAD_SERVICE_URL: http://video-upload-service:3004
+      MINIO_SERVICE_URL: http://minio:9000
+      MINIO_HOST: minio:9000
+    ports:
+      - "8081:80"
+    depends_on:
+      - auth-service
+      - video-metadata-service
+      - video-upload-service
+      - streaming-service
+      - minio
+    restart: unless-stopped
+
+  admin-ui:
+    build:
+      context: .
+      dockerfile: packages/admin-ui/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8081/api
+        VITE_CLOUDFRONT_URL: http://localhost:8081/storage/bell-streaming-videos
+        VITE_MAX_FILE_SIZE_MB: 500
+    ports:
+      - "5173:80"
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+  frontend-ui:
+    build:
+      context: .
+      dockerfile: packages/frontend-ui/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8081/api
+        VITE_CLOUDFRONT_URL: http://localhost:8081/storage/bell-streaming-videos
+    ports:
+      - "5174:80"
+    depends_on:
+      - nginx
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  minio-data:
