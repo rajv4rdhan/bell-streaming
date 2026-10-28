@@ -5,6 +5,9 @@ import { Spinner, PremiumVideoPlayer, Button, streamingApi, formatNumber, format
 import { VideoCard } from '../components/VideoCard';
 import type { Video } from '@bell-streaming/shared-ui';
 
+const CLOUDFRONT_URL =
+  import.meta.env.VITE_CLOUDFRONT_URL || 'https://drmcv4972t1k7.cloudfront.net';
+
 export const VideoPage = () => {
   const { videoId } = useParams<{ videoId: string }>();
   const queryClient = useQueryClient();
@@ -60,7 +63,7 @@ export const VideoPage = () => {
         <div className="rounded-lg overflow-hidden">
           {video.s3Key ? (
             <PremiumVideoPlayer
-              url={`${import.meta.env.VITE_CLOUDFRONT_URL}/${video.s3Key}`}
+              url={`${CLOUDFRONT_URL}/${video.s3Key}`}
               poster={video.thumbnailUrl}
             />
           ) : (
