@@ -3,6 +3,9 @@ import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Input, videoMetadataApi, videoUploadApi } from '@bell-streaming/shared-ui';
 
+const MAX_FILE_SIZE_MB = Number(import.meta.env.VITE_MAX_FILE_SIZE_MB || 500);
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 type UploadStep = 'metadata' | 'presigning' | 'file' | 'uploading' | 'confirming' | 'success' | 'error';
 
 interface StageStatus {
@@ -133,9 +136,9 @@ export const UploadPage = () => {
       setError('Please select a valid video file.');
       return;
     }
-    const maxSize = 1024 * 1024 * 1024; // 1GB
+    const maxSize = MAX_FILE_SIZE_BYTES;
     if (selectedFile.size > maxSize) {
-      setError('File size must be less than 1GB.');
+      setError(`File size must be less than ${MAX_FILE_SIZE_MB}MB.`);
       return;
     }
 
@@ -349,7 +352,7 @@ export const UploadPage = () => {
                 <p className="text-lg font-medium text-slate-900 mb-2">
                   {isDragActive ? 'Drop your video here' : 'Drag & drop your video'}
                 </p>
-                <p className="text-sm text-slate-500">or click to browse (MP4, WebM, MOV - Max 1GB)</p>
+                <p className="text-sm text-slate-500">or click to browse (MP4, WebM, MOV - Max {MAX_FILE_SIZE_MB}MB)</p>
               </div>
             )}
           </div>

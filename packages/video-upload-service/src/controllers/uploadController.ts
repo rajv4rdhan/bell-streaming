@@ -221,7 +221,7 @@ export const autoVerifyUpload = async (
       return;
     }
     
-    const UPLOAD_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    const UPLOAD_TIMEOUT = config.upload.timeoutMs;
     const uploadStartTime = new Date(video.updatedAt).getTime();
     const now = Date.now();
     const timeElapsed = now - uploadStartTime;

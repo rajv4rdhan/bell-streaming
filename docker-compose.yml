@@ -62,6 +62,7 @@ services:
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://bell.tuneloom.cfd/api}
         VITE_CLOUDFRONT_URL: ${VITE_CLOUDFRONT_URL:-https://drmcv4972t1k7.cloudfront.net}
+        VITE_MAX_FILE_SIZE_MB: ${VITE_MAX_FILE_SIZE_MB:-500}
     environment:
       - TZ=UTC
     ports:
@@ -114,6 +115,7 @@ services:
       - S3_PUBLIC_BASE_URL=${S3_PUBLIC_BASE_URL:-}
       - JWT_SECRET=${JWT_SECRET}
       - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB:-500}
+      - UPLOAD_TIMEOUT_MS=${UPLOAD_TIMEOUT_MS:-1800000}
       - ALLOWED_VIDEO_TYPES=${ALLOWED_VIDEO_TYPES}
       - ALLOWED_VIDEO_EXTENSIONS=${ALLOWED_VIDEO_EXTENSIONS}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
