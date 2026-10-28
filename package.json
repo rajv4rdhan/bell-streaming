@@ -17,6 +17,8 @@
     "build:admin-ui": "npm run build --workspace=@bell-streaming/shared-ui && npm run build --workspace=@bell-streaming/admin-ui",
     "install:all": "npm install --workspaces",
     "dev:compose": "docker compose up --build -d",
+    "dev:local": "docker compose -f docker-compose.local.yml up --build -d",
+    "down:local": "docker compose -f docker-compose.local.yml down",
     "prod:compose": "docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d",
     "down": "docker compose down"
   },

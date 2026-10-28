@@ -74,7 +74,16 @@ bellStreaming/
    ```
 
 3. **Run the application:**
-   The recommended way to boot the entire stack (including monitoring and database dependencies) is using Docker Compose:
+   For local development with its own MongoDB and MinIO object storage (and no monitoring stack):
+   ```bash
+   npm run dev:local
+   ```
+   This runs `docker compose -f docker-compose.local.yml up --build -d`.
+
+   The admin UI is available at http://localhost:5173, the public UI at
+   http://localhost:5174, and the API gateway at http://localhost:8081.
+
+   To use the original stack (external MongoDB/S3 and monitoring services):
    ```bash
    npm run dev:compose
    # which runs: docker compose up --build -d
