@@ -1,9 +1,10 @@
 // import { videoMetadataService } from './videoMetadataService';
 // import { s3Service } from './s3Service';
+import { config } from '../config';
 
 class UploadMonitor {
   private intervalId: NodeJS.Timeout | null = null;
-  private readonly CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  private readonly CHECK_INTERVAL = config.upload.monitorIntervalMs;
   // private readonly UPLOAD_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
   start(): void {

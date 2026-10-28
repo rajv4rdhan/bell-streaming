@@ -20,6 +20,7 @@ export const config = {
     endpoint: process.env.S3_ENDPOINT || undefined,
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
     s3BucketName: process.env.S3_BUCKET_NAME || 'bell-streaming-videos',
+    keyPrefix: (process.env.S3_VIDEO_KEY_PREFIX || 'videos').replace(/^\/+|\/+$/g, ''),
     presignedUrlExpiration: parseInt(process.env.S3_PRESIGNED_URL_EXPIRATION || '900', 10),
     publicBaseUrl: process.env.S3_PUBLIC_BASE_URL || '',
   },
@@ -33,6 +34,7 @@ export const config = {
     maxFileSizeMB: parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10),
     maxFileSizeBytes: parseInt(process.env.MAX_FILE_SIZE_MB || '500', 10) * 1024 * 1024,
     timeoutMs: parseInt(process.env.UPLOAD_TIMEOUT_MS || '1800000', 10),
+    monitorIntervalMs: parseInt(process.env.UPLOAD_MONITOR_INTERVAL_MS || '300000', 10),
     allowedVideoTypes: parseList(process.env.ALLOWED_VIDEO_TYPES) || [
       'video/mp4',
       'video/mpeg',

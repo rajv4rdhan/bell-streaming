@@ -118,7 +118,7 @@ export class S3Service {
   generateS3Key(userId: string, videoId: string, filename: string): string {
     const timestamp = Date.now();
     const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    return `videos/${userId}/${videoId}/${timestamp}_${sanitized}`;
+    return `${config.aws.keyPrefix}/${userId}/${videoId}/${timestamp}_${sanitized}`;
   }
 }
 
