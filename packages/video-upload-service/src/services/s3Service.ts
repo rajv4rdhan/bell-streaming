@@ -17,6 +17,9 @@ export class S3Service {
       },
       endpoint: config.aws.endpoint,
       forcePathStyle: config.aws.forcePathStyle,
+      // Presigned PUTs must not embed a checksum of an empty payload.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     });
   }
 
