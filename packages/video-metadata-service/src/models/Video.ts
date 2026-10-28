@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import mongoose, { Document, Schema } from 'mongoose';
 
 export enum VisibilityStatus {
@@ -31,7 +32,7 @@ export interface IVideo extends Document {
 }
 
 // Default 16:9 placeholder thumbnail
-const DEFAULT_THUMBNAIL = 'https://drmcv4972t1k7.cloudfront.net/Placeholder800x450.jpeg';
+const DEFAULT_THUMBNAIL = process.env.DEFAULT_THUMBNAIL_URL || '';
 
 const videoSchema = new Schema<IVideo>(
   {

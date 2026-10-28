@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Input, Modal, Spinner, videoMetadataApi, formatRelativeTime, PremiumVideoPlayer } from '@bell-streaming/shared-ui';
 import type { Video } from '@bell-streaming/shared-ui';
 
-const CDN_BASE_URL =
-  import.meta.env.VITE_CLOUDFRONT_URL || 'https://drmcv4972t1k7.cloudfront.net';
+const CDN_BASE_URL = import.meta.env.VITE_CLOUDFRONT_URL || '';
 
 const toCdnUrl = (value?: string): string => {
   if (!value) return '';
-  return value.startsWith('http') ? value : `${CDN_BASE_URL}/${value.replace(/^\//, '')}`;
+  if (value.startsWith('http')) return value;
+  const normalized = value.replace(/^\//, '');
+  return CDN_BASE_URL ? `${CDN_BASE_URL}/${normalized}` : `/${normalized}`;
 };
 
 export const VideosPage = () => {

@@ -18,9 +18,9 @@ import type {
 const getApiBaseUrl = (): string => {
   try {
     // @ts-ignore - Vite provides import.meta.env at runtime
-    return import.meta.env.VITE_API_BASE_URL || 'http://bell.certifica.in/api';
+    return import.meta.env.VITE_API_BASE_URL || '/api';
   } catch {
-    return 'http://bell.certifica.in/api';
+    return '/api';
   }
 };
 
