@@ -17,11 +17,11 @@ export const LoginPage = () => {
 
     try {
       const response = await authApi.login({ email, password });
-      const { token, refreshToken, user } = response.data;
+      const { accessToken, refreshToken, user } = response.data;
       
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      login(user, token);
+      login(user, accessToken);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');

@@ -11,8 +11,8 @@ export const useAuth = () => {
     const verifyAuth = async () => {
       if (token && !user) {
         try {
-          const response = await apiClient.get<User>('/auth/me');
-          setUser(response.data);
+          const response = await apiClient.get<{ user: User }>('/auth/profile');
+          setUser(response.data.user);
         } catch (error) {
           logout();
         }

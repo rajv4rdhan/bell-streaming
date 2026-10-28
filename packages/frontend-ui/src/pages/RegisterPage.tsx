@@ -43,11 +43,11 @@ export const RegisterPage = () => {
         email,
         password,
       });
-      const { token, refreshToken, user } = response.data;
+      const { accessToken, refreshToken, user } = response.data;
       
-      localStorage.setItem('authToken', token);
+      localStorage.setItem('authToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      login(user, token);
+      login(user, accessToken);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
