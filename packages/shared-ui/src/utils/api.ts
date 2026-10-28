@@ -53,7 +53,11 @@ export const createApiClient = (baseURL: string = API_BASE_URL): AxiosInstance =
       if (error.response?.status === 401) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        // A failed login is already on /login; redirecting would reload the
+        // page and hide the error message returned by the API.
+        if (!error.config?.url?.includes('/auth/login')) {
+          window.location.href = '/login';
+        }
       }
       return Promise.reject(error);
     }
