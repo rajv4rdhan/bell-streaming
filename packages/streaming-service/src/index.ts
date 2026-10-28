@@ -1,6 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
-
+import { config } from './config';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,10 +7,10 @@ import { rateLimiter } from './middleware/rateLimiter';
 import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 
 const app: Express = express();
-const port = process.env.PORT || 3003;
+const port = config.port;
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: config.cors.allowedOrigins,
   credentials: false,
 }));
 app.use(helmet());

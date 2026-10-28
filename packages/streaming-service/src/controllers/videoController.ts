@@ -1,16 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
-
-const videoMetadataServiceUrl = process.env.VIDEO_METADATA_SERVICE_URL;
-
-if (!videoMetadataServiceUrl) {
-    throw new Error("VIDEO_METADATA_SERVICE_URL is not defined in the environment variables.");
-}
+import { config } from '../config';
 
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Forward the request to the video-metadata-service
-        const response = await axios.get(`${videoMetadataServiceUrl}/api/admin/videos/public`);
+        const response = await axios.get(`${config.videoMetadataServiceUrl}/api/admin/videos/public`);
         res.status(response.status).json(response.data);
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -24,7 +19,7 @@ export const getVideoById = async (req: Request, res: Response, next: NextFuncti
     try {
         const { videoId } = req.params;
         // Forward the request to the video-metadata-service
-        const response = await axios.get(`${videoMetadataServiceUrl}/api/admin/videos/${videoId}/public`);
+        const response = await axios.get(`${config.videoMetadataServiceUrl}/api/admin/videos/${videoId}/public`);
 
         return res.json(response.data);
 
