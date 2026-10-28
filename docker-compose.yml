@@ -7,6 +7,10 @@ services:
       dockerfile: nginx/Dockerfile
     environment:
       - TZ=UTC
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - STREAMING_SERVICE_URL=${STREAMING_SERVICE_URL:-http://streaming-service:3003}
+      - VIDEO_METADATA_SERVICE_URL=${VIDEO_METADATA_SERVICE_URL:-http://video-metadata-service:3002}
+      - VIDEO_UPLOAD_SERVICE_URL=${VIDEO_UPLOAD_SERVICE_URL:-http://video-upload-service:3004}
     ports:
       - "8081:80"
     depends_on:
