@@ -5,6 +5,7 @@ params.txt
 dist
 tmp
 out-tsc
+*.tsbuildinfo
 .env
 # dependencies
 node_modules
