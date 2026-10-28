@@ -9,6 +9,11 @@ import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 export const createApp = (): Application => {
   const app = express();
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   // Trust proxy (nginx)
   app.set('trust proxy', true);
 
@@ -18,7 +23,7 @@ export const createApp = (): Application => {
   // CORS configuration
   app.use(
     cors({
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || config.cors.allowedOrigins,
+      origin: allowedOrigins?.length ? allowedOrigins : config.cors.allowedOrigins,
       credentials: true,
     })
   );

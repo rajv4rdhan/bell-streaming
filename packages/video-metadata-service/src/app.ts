@@ -8,13 +8,18 @@ import { metricsMiddleware, metricsHandler } from './middleware/metrics';
 export const createApp = (): Application => {
   const app = express();
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   // Trust proxy (nginx)
   app.set('trust proxy', true);
 
   app.use(helmet());
   app.use(
     cors({
-      origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173'],
+      origin: allowedOrigins?.length ? allowedOrigins : ['http://localhost:3000', 'http://localhost:5173'],
       credentials: true,
     })
   );
