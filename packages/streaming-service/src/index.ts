@@ -29,7 +29,7 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Streaming Service is running!');
 });
 
-app.use('/api/stream', videoRoutes);
+app.use('/api/videos', videoRoutes);
 
 // Simple error handler
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

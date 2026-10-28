@@ -147,9 +147,11 @@ export const updateUploadStatus = async (req: Request, res: Response, next: Next
 export const getPublicVideos = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const videos = await Video.find({
-      visibility: 'private',
-    }).select('title description duration createdAt');
-    res.status(200).json(videos);
+      visibility: VisibilityStatus.PUBLIC,
+    })
+      .select('title description thumbnailUrl durationSeconds createdAt')
+      .sort({ createdAt: -1 });
+    res.status(200).json({ total: videos.length, videos });
   } catch (error) {
     next(error);
   }
@@ -160,6 +162,7 @@ export const getPublicVideoById = async (req: Request, res: Response, next: Next
     const { videoId } = req.params;
     const video = await Video.findOne({
       _id: videoId,
+      visibility: VisibilityStatus.PUBLIC,
     });
 
     if (!video) {

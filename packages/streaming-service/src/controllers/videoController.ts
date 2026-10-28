@@ -10,7 +10,7 @@ if (!videoMetadataServiceUrl) {
 export const getAllVideos = async (req: Request, res: Response, next: NextFunction) => {
     try {
         // Forward the request to the video-metadata-service
-        const response = await axios.get(`${videoMetadataServiceUrl}/api/videos/public`);
+        const response = await axios.get(`${videoMetadataServiceUrl}/api/admin/videos/public`);
         res.status(response.status).json(response.data);
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {
@@ -24,16 +24,9 @@ export const getVideoById = async (req: Request, res: Response, next: NextFuncti
     try {
         const { videoId } = req.params;
         // Forward the request to the video-metadata-service
-        const response = await axios.get(`${videoMetadataServiceUrl}/api/videos/${videoId}/public`);
-        
-        // We only want to expose a limited set of data
-        const { title, description, s3Key } = response.data;
-        
-        return res.json({
-            title,
-            description,
-            path: s3Key // Exposing the s3Key as 'path'
-        });
+        const response = await axios.get(`${videoMetadataServiceUrl}/api/admin/videos/${videoId}/public`);
+
+        return res.json(response.data);
 
     } catch (error) {
         if (axios.isAxiosError(error) && error.response) {

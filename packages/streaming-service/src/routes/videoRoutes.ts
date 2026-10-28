@@ -3,7 +3,7 @@ import { getAllVideos, getVideoById } from '../controllers/videoController';
 
 const router = Router();
 
-router.get('/', getAllVideos);
+router.get('/public', getAllVideos);
 router.get('/:videoId', getVideoById);
 
 export default router;
