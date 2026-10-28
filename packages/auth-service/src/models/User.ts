@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { UserRole } from '../schemas';
+import { config } from '../config';
 
 export interface IUser extends Document {
   email: string;
@@ -66,7 +67,7 @@ userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(config.bcryptSaltRounds);
     this.password = await bcrypt.hash(this.password, salt);
     next();
   } catch (error: any) {

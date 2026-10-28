@@ -14,6 +14,7 @@ export const config = {
     expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as string,
     refreshExpiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as string,
   },
+  bcryptSaltRounds: parseInt(process.env.BCRYPT_SALT_ROUNDS || '10', 10),
   cors: {
     allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://admin.bell.certifica.in'],
   },
