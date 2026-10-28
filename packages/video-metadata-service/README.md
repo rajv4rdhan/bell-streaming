@@ -35,7 +35,10 @@ Copy `.env.example` to `.env`:
 PORT=3002
 MONGODB_URI=mongodb://localhost:27017/bell-streaming-video
 JWT_SECRET=your-super-secret-jwt-key
-ALLOWED_ORIGINS=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:8081,http://localhost:5173,http://localhost:5174
+DEFAULT_THUMBNAIL_URL=
+S3_BUCKET_NAME=bell-streaming-videos
+S3_VIDEO_KEY_PREFIX=videos
 ```
 
 ## Install & Run

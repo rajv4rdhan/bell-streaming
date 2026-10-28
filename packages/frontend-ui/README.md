@@ -42,5 +42,6 @@ npm run preview
 Create a `.env` file:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000/api
+VITE_API_BASE_URL=http://localhost:8081/api
+VITE_CLOUDFRONT_URL=https://your-cloudfront-distribution.cloudfront.net
 ```

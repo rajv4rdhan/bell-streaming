@@ -122,14 +122,17 @@ aws s3 mb s3://bell-streaming-videos --region us-east-1
 ### Environment Configuration
 Copy `.env.example` to `.env`:
 ```env
-PORT=3003
+PORT=3004
 AWS_REGION=us-east-1
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
 S3_BUCKET_NAME=bell-streaming-videos
-VIDEO_METADATA_SERVICE_URL=http://localhost:3002/api/videos
+S3_VIDEO_KEY_PREFIX=videos
+VIDEO_METADATA_SERVICE_URL=http://localhost:3002/api/admin/videos
 JWT_SECRET=your-jwt-secret
 MAX_FILE_SIZE_MB=500
+ALLOWED_VIDEO_EXTENSIONS=.mp4,.mov,.avi,.webm,.mkv,.mpeg,.mpg
+UPLOAD_TIMEOUT_MS=1800000
 ```
 
 ## 🚀 Installation & Run
