@@ -129,6 +129,7 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - RATE_LIMIT_WINDOW_MS=${RATE_LIMIT_WINDOW_MS}
       - RATE_LIMIT_MAX_REQUESTS=${RATE_LIMIT_MAX_REQUESTS}
+      - KAFKA_ENABLED=${KAFKA_ENABLED:-true}
     labels:
       logging: "alloy"
 

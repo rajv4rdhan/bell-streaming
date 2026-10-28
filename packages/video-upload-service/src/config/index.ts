@@ -62,6 +62,7 @@ export const config = {
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '20', 10),
   },
   kafka: {
+    enabled: process.env.KAFKA_ENABLED !== 'false',
     brokers: parseList(process.env.KAFKA_BROKERS) || ['localhost:9092'],
     clientId: process.env.KAFKA_CLIENT_ID || 'video-upload-service',
     topic: process.env.KAFKA_TOPIC || 'video-uploads',

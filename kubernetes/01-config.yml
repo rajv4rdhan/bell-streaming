@@ -16,6 +16,7 @@ data:
   S3_FORCE_PATH_STYLE: "false"
   S3_PUBLIC_BASE_URL: ""
   S3_PUBLIC_ENDPOINT: ""
+  KAFKA_ENABLED: "true"
   ALLOWED_VIDEO_EXTENSIONS: ".mp4,.mov,.avi,.webm,.mkv,.mpeg,.mpg"
   ALLOWED_VIDEO_TYPES: "video/mp4,video/mpeg,video/quicktime,video/x-msvideo,video/webm,video/x-matroska"
   MAX_FILE_SIZE_MB: "500"

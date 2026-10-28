@@ -33,6 +33,11 @@ class KafkaService {
   async publishVideoUploaded(
     message: Omit<VideoUploadedMessage, 'event' | 'uploadedAt'>
   ): Promise<void> {
+    if (!config.kafka.enabled) {
+      console.log('[Kafka] Publishing disabled, skipping video.uploaded event');
+      return;
+    }
+
     try {
       const producer = await this.getProducer();
       const payload: VideoUploadedMessage = {
