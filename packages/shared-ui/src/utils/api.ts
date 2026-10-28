@@ -86,7 +86,7 @@ export const authApi = {
   
   // Admin endpoints
   getUsers: () => 
-    apiClient.get<User[]>('/auth/users'),
+    apiClient.get<{ count: number; users: User[] }>('/auth/users'),
   
   changeUserRole: (userId: string, role: 'admin' | 'user') => 
     apiClient.patch(`/auth/users/${userId}/role`, { role }),
@@ -101,7 +101,7 @@ export const videoMetadataApi = {
     apiClient.post<CreateVideoResponse>('/admin/videos', data),
   
   getAllVideos: (params?: { search?: string; page?: number; limit?: number }) => 
-    apiClient.get<{ videos: Video[]; total: number }>('/admin/videos', { params }),
+    apiClient.get<{ videos: Video[]; count: number }>('/admin/videos', { params }),
   
   getPublicVideos: (params?: { search?: string; page?: number; limit?: number }) => 
     apiClient.get<{ videos: Video[]; total: number }>('/admin/videos/public', { params }),

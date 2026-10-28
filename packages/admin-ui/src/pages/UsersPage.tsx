@@ -12,7 +12,10 @@ export const UsersPage = () => {
     queryKey: ['users'],
     queryFn: async () => {
       const response = await authApi.getUsers();
-      return response.data;
+      return response.data.users.map((user) => ({
+        ...user,
+        _id: user.id ?? user._id,
+      }));
     },
   });
 

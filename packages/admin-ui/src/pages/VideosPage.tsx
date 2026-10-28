@@ -3,6 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Input, Modal, Spinner, videoMetadataApi, formatRelativeTime, PremiumVideoPlayer } from '@bell-streaming/shared-ui';
 import type { Video } from '@bell-streaming/shared-ui';
 
+const CDN_BASE_URL =
+  import.meta.env.VITE_CLOUDFRONT_URL || 'https://drmcv4972t1k7.cloudfront.net';
+
+const toCdnUrl = (value?: string): string => {
+  if (!value) return '';
+  return value.startsWith('http') ? value : `${CDN_BASE_URL}/${value.replace(/^\//, '')}`;
+};
+
 export const VideosPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
@@ -61,7 +69,7 @@ export const VideosPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">Videos</h1>
-            <p className="text-sm text-zinc-500 mt-1">{videos?.total || 0} videos in library</p>
+            <p className="text-sm text-zinc-500 mt-1">{videos?.count || 0} videos in library</p>
           </div>
           <div className="w-80">
             <Input
@@ -89,9 +97,7 @@ export const VideosPage = () => {
                   <div className="flex-shrink-0 w-48 h-28 relative bg-zinc-100 rounded-md overflow-hidden">
                     {video.thumbnailUrl ? (
                       <img
-                        src={video.thumbnailUrl.startsWith('https://d1d410bjpcuiwb.cloudfront.net')
-                          ? video.thumbnailUrl
-                          : `https://d1d410bjpcuiwb.cloudfront.net/${video.thumbnailUrl.replace(/^\//, '')}`}
+                        src={toCdnUrl(video.thumbnailUrl)}
                         alt={video.title}
                         className="w-full h-full object-cover"
                       />
@@ -198,10 +204,8 @@ export const VideosPage = () => {
           <div className="space-y-6">
             {selectedVideo.s3Key ? (
               <PremiumVideoPlayer
-                url={selectedVideo.s3Key.startsWith('http') 
-                  ? selectedVideo.s3Key 
-                  : `https://d1d410bjpcuiwb.cloudfront.net/${selectedVideo.s3Key.replace(/^\//, '').toLowerCase()}`}
-                poster={selectedVideo.thumbnailUrl}
+                url={toCdnUrl(selectedVideo.s3Key)}
+                poster={toCdnUrl(selectedVideo.thumbnailUrl)}
               />
             ) : (
               <div className="aspect-video bg-zinc-100 rounded-lg flex items-center justify-center text-zinc-500">
