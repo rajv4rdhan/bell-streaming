@@ -53,7 +53,7 @@ export const Layout = () => {
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <>
-                <span className="text-sm text-gray-300">Hi, {user?.name}</span>
+                <span className="text-sm text-gray-300">Hi, {user?.firstName}</span>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 bg-red-600 rounded-full hover:bg-red-700 transition-colors"

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Spinner, PremiumVideoPlayer, Button, streamingApi, formatNumber, formatRelativeTime } from '@bell-streaming/shared-ui';
@@ -83,7 +83,7 @@ export const VideoPage = () => {
             <div className="flex items-center gap-4 text-gray-400">
               <span>{formatNumber(video.views)} views</span>
               <span>•</span>
-              <span>{formatRelativeTime(video.uploadedAt)}</span>
+              <span>{formatRelativeTime(video.createdAt || video.uploadedAt)}</span>
             </div>
             
             <div className="flex gap-2">

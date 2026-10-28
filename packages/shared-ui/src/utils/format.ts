@@ -19,8 +19,10 @@ export const formatFileSize = (bytes: number): string => {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
-export const formatDate = (dateString: string): string => {
+export const formatDate = (dateString?: string): string => {
+  if (!dateString) return '';
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
     month: 'long',
@@ -28,8 +30,10 @@ export const formatDate = (dateString: string): string => {
   }).format(date);
 };
 
-export const formatRelativeTime = (dateString: string): string => {
+export const formatRelativeTime = (dateString?: string): string => {
+  if (!dateString) return '';
   const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -41,6 +45,6 @@ export const formatRelativeTime = (dateString: string): string => {
   return formatDate(dateString);
 };
 
-export const formatNumber = (num: number): string => {
-  return new Intl.NumberFormat('en-US').format(num);
+export const formatNumber = (num?: number | null): string => {
+  return new Intl.NumberFormat('en-US').format(num ?? 0);
 };
