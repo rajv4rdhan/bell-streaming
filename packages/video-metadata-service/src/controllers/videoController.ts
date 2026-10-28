@@ -13,7 +13,8 @@ export const createVideo = async (req: AuthRequest, res: Response, next: NextFun
 
     const ownerUserId = req.user?.userId || 'admin';
     const timestamp = Date.now();
-    const s3Key = `videos/${ownerUserId}/${timestamp}_${title.replace(/\s+/g, '_')}.mp4`;
+    const s3KeyPrefix = (process.env.S3_VIDEO_KEY_PREFIX || 'videos').replace(/^\/+|\/+$/g, '');
+    const s3Key = `${s3KeyPrefix}/${ownerUserId}/${timestamp}_${title.replace(/\s+/g, '_')}.mp4`;
     const s3Bucket = process.env.S3_BUCKET_NAME || 'bell-streaming-videos';
 
     const video = await Video.create({

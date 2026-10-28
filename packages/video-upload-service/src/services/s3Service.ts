@@ -15,7 +15,8 @@ export class S3Service {
         accessKeyId: config.aws.accessKeyId,
         secretAccessKey: config.aws.secretAccessKey,
       },
-      forcePathStyle: false, // Use virtual-hosted-style URLs
+      endpoint: config.aws.endpoint,
+      forcePathStyle: config.aws.forcePathStyle,
     });
   }
 
@@ -108,6 +109,9 @@ export class S3Service {
   }
 
   getS3ObjectUrl(key: string): string {
+    if (config.aws.publicBaseUrl) {
+      return `${config.aws.publicBaseUrl.replace(/\/$/, '')}/${key.replace(/^\//, '')}`;
+    }
     return `https://${this.bucketName}.s3.${config.aws.region}.amazonaws.com/${key}`;
   }
 
