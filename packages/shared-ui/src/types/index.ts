@@ -87,7 +87,7 @@ export interface ConfirmUploadRequest {
 export interface ReportFailedUploadRequest {
   videoId: string;
   s3Key: string;
-  error: string;
+  reason: string;
 }
 
 export interface CreateVideoRequest {

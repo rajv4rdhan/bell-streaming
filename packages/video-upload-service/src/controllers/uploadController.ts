@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { s3Service, videoMetadataService, kafkaService } from '../services';
+import { config } from '../config';
 import { AppError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { GeneratePresignedUrlInput, ConfirmUploadInput, UploadFailedInput } from '../schemas';
@@ -45,7 +46,7 @@ export const generatePresignedUrl = async (
       message: 'Presigned URL generated',
       presignedUrl,
       s3Key: video.s3Key,
-      expiresIn: 900, // 15 minutes
+      expiresIn: config.aws.presignedUrlExpiration,
       uploadInstructions: {
         method: 'PUT',
         headers: {

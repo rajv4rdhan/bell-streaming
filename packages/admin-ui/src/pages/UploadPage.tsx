@@ -121,7 +121,7 @@ export const UploadPage = () => {
       setError(errorMessage);
       setCurrentStep('error');
       setStageStatus(prev => ({ ...prev, uploading: 'error', confirming: 'error' }));
-      if (videoId && s3Key) videoUploadApi.reportFailedUpload({ videoId, s3Key, error: errorMessage });
+      if (videoId && s3Key) videoUploadApi.reportFailedUpload({ videoId, s3Key, reason: errorMessage });
     },
   });
 
