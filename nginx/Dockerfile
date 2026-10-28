@@ -5,11 +5,13 @@ FROM nginx:alpine
 ENV AUTH_SERVICE_URL=http://auth-service:3001 \
     STREAMING_SERVICE_URL=http://streaming-service:3003 \
     VIDEO_METADATA_SERVICE_URL=http://video-metadata-service:3002 \
-    VIDEO_UPLOAD_SERVICE_URL=http://video-upload-service:3004
+    VIDEO_UPLOAD_SERVICE_URL=http://video-upload-service:3004 \
+    MINIO_SERVICE_URL=http://127.0.0.1:9000 \
+    MINIO_HOST=minio:9000
 
 # Restrict envsubst to the upstream variables so nginx runtime variables
 # such as $host and $http_origin are left untouched.
 ENV NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx \
-    NGINX_ENVSUBST_FILTER="AUTH_SERVICE_URL|STREAMING_SERVICE_URL|VIDEO_METADATA_SERVICE_URL|VIDEO_UPLOAD_SERVICE_URL"
+    NGINX_ENVSUBST_FILTER="AUTH_SERVICE_URL|STREAMING_SERVICE_URL|VIDEO_METADATA_SERVICE_URL|VIDEO_UPLOAD_SERVICE_URL|MINIO_SERVICE_URL|MINIO_HOST"
 
 COPY nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
