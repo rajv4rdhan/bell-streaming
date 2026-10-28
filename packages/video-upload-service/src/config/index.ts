@@ -23,6 +23,7 @@ export const config = {
     keyPrefix: (process.env.S3_VIDEO_KEY_PREFIX || 'videos').replace(/^\/+|\/+$/g, ''),
     presignedUrlExpiration: parseInt(process.env.S3_PRESIGNED_URL_EXPIRATION || '900', 10),
     publicBaseUrl: process.env.S3_PUBLIC_BASE_URL || '',
+    publicEndpoint: process.env.S3_PUBLIC_ENDPOINT || '',
   },
   videoMetadataService: {
     url: process.env.VIDEO_METADATA_SERVICE_URL || 'http://localhost:3002/api/admin/videos',

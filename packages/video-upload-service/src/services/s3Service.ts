@@ -37,6 +37,19 @@ export class S3Service {
         expiresIn: config.aws.presignedUrlExpiration,
       });
 
+      // When S3 is only reachable through a proxy (for example MinIO in a
+      // local compose stack), rewrite the URL host for the browser while the
+      // signature still targets the internal endpoint.
+      if (config.aws.publicEndpoint) {
+        const publicEndpoint = new URL(config.aws.publicEndpoint);
+        const url = new URL(presignedUrl);
+        const publicPath = publicEndpoint.pathname.replace(/\/$/, '');
+        url.protocol = publicEndpoint.protocol;
+        url.host = publicEndpoint.host;
+        url.pathname = `${publicPath}${url.pathname}`;
+        return url.toString();
+      }
+
       return presignedUrl;
     } catch (error) {
       console.error('S3 presigned URL generation error:', error);
