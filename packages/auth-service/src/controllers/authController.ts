@@ -26,8 +26,8 @@ export const register = async (
     // Only allow the very first account to bootstrap itself as admin.
     // Every other public registration is a regular user; admins promote users.
     const requestedRole = role ?? UserRole.USER;
-    const isFirstAdmin =
-      requestedRole === UserRole.ADMIN && !(await User.exists({ role: UserRole.ADMIN }));
+    const isBootstrapAdmin =
+      requestedRole === UserRole.ADMIN && (await User.countDocuments({})) === 0;
 
     // Create new user
     const user = new User({
@@ -35,7 +35,7 @@ export const register = async (
       password,
       firstName,
       lastName,
-      role: isFirstAdmin ? UserRole.ADMIN : UserRole.USER,
+      role: isBootstrapAdmin ? UserRole.ADMIN : UserRole.USER,
     });
 
     await user.save();
