@@ -23,13 +23,19 @@ export const register = async (
       throw new AppError('User with this email already exists', 409);
     }
 
+    // Only allow the very first account to bootstrap itself as admin.
+    // Every other public registration is a regular user; admins promote users.
+    const requestedRole = role ?? UserRole.USER;
+    const isFirstAdmin =
+      requestedRole === UserRole.ADMIN && !(await User.exists({ role: UserRole.ADMIN }));
+
     // Create new user
     const user = new User({
       email,
       password,
       firstName,
       lastName,
-      role: role || UserRole.USER,
+      role: isFirstAdmin ? UserRole.ADMIN : UserRole.USER,
     });
 
     await user.save();
